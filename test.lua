@@ -1,6 +1,6 @@
 local comp = require("component")
 local math = require("math")
-local mod = require("modem")
+local mod = comp.modem
 local event = require("event")
 local pc = require("computer")
 local term = require("term")
@@ -96,14 +96,18 @@ function vrotz (vec, ang)
   return new
   end
 
-local v1, v2, v3, v4 = {"x" = {}, "y" = {}, "z" = {})
+local v1 = {}
+local v2 = {}
+local v3 = {}
+local v4 = {}
 local s1, s2, s3, s4 = 0
 local str 
 print("Write starting point (SP) #1 coordinates.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, -23")
 str = term.read()
-str = str:sub(1, str:find("n")-2)
+str = tostring(str)
+if (string.find(str, "n") ~= nil) then str = str:sub(1, str:find("n")-2) end
 v1["x"] = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 v1["y"] = tonumber(str:sub(1, str:find(",")-1))
@@ -113,7 +117,8 @@ print("Write SP #2 coordinates.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, -23")
 str = term.read()
-str = str:sub(1, str:find("n")-2)
+str = tostring(str)
+if (string.find(str, "n") ~= nil) then str = str:sub(1, str:find("n")-2) end
 v2["x"] = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 v2["y"] = tonumber(str:sub(1, str:find(",")-1))
@@ -123,7 +128,8 @@ print("Write SP #3 coordinates.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, -23")
 str = term.read()
-str = str:sub(1, str:find("n")-2)
+str = tostring(str)
+if (string.find(str, "n") ~= nil) then str = str:sub(1, str:find("n")-2) end
 v3["x"] = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 v3["y"] = tonumber(str:sub(1, str:find(",")-1))
@@ -133,7 +139,8 @@ print("Write SP #4 coordinates.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, -23")
 str = term.read()
-str = str:sub(1, str:find("n")-2)
+str = tostring(str)
+if (string.find(str, "n") ~= nil) then str = str:sub(1, str:find("n")-2) end
 v4["x"] = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 v4["y"] = tonumber(str:sub(1, str:find(",")-1))
@@ -143,7 +150,8 @@ print("Write distances between target point and SP #1-4.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, 23, 48.89")
 str = term.read()
-str = str:sub(1, str:find("n")-2)
+str = tostring(str)
+if (string.find(str, "n") ~= nil) then str = str:sub(1, str:find("n")-2) end
 s1 = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 s2 = tonumber(str:sub(1, str:find(",")-1))
@@ -156,5 +164,3 @@ print(v2["x"], " ", v2["y"], " ", v2["z"])
 print(v3["x"], " ", v3["y"], " ", v3["z"])
 print(v4["x"], " ", v4["y"], " ", v4["z"])
 print(s1, " ", s2, " ", s3, " ", s4)
-
-
