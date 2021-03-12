@@ -71,3 +71,24 @@ function vdiv (vec, num)
   new["z"] = vec["z"] / num
   return new
   end
+
+function vrotx (vec, ang)
+  local new = vec
+  new["y"] = vec["y"]*math.cos(ang)-vec["z"]*math.sin(ang)
+  new["z"] = vec["y"]*math.sin(ang)+vec["z"]*math.cos(ang)
+  return new
+  end
+
+function vroty (vec, ang)
+  local new = vec
+  new["x"] = vec["x"]*math.cos(ang)+vec["z"]*math.sin(ang)
+  new["z"] = vec["z"]*math.cos(ang)-vec["x"]*math.sin(ang)
+  return new
+  end
+
+function vrotz (vec, ang)
+  local new = vec
+  new["x"] = vec["x"]*math.cos(ang)-vec["y"]*math.sin(ang)
+  new["y"] = vec["x"]*math.sin(ang)+vec["y"]*math.cos(ang)
+  return new
+  end
