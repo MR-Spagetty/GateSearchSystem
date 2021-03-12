@@ -75,24 +75,57 @@ function vdiv (vec, num)
   return new
   end
 
-function vrotx (vec, ang)
+function vrotx (vec, cosang)
   local new = vec
-  new["y"] = vec["y"]*math.cos(ang)-vec["z"]*math.sin(ang)
-  new["z"] = vec["y"]*math.sin(ang)+vec["z"]*math.cos(ang)
+  new["y"] = vec["y"]*cosang-vec["z"]*math.sqrt(1-cosang*cosang)
+  new["z"] = vec["y"]*math.sqrt(1-cosang*cosang)+vec["z"]*cosang
   return new
   end
 
-function vroty (vec, ang)
+function vrerotx (vec, cosang)
   local new = vec
-  new["x"] = vec["x"]*math.cos(ang)+vec["z"]*math.sin(ang)
-  new["z"] = vec["z"]*math.cos(ang)-vec["x"]*math.sin(ang)
+  new["y"] = vec["z"]*math.sqrt(1-cosang*cosang)-vec["y"]*cosang
+  new["z"] = vec["z"]*cosang-vec["y"]*math.sqrt(1-cosang*cosang)
   return new
   end
 
-function vrotz (vec, ang)
+function vroty (vec, cosang)
   local new = vec
-  new["x"] = vec["x"]*math.cos(ang)-vec["y"]*math.sin(ang)
-  new["y"] = vec["x"]*math.sin(ang)+vec["y"]*math.cos(ang)
+  new["x"] = vec["x"]*cosang+vec["z"]*math.sqrt(1-cosang*cosang)
+  new["z"] = vec["z"]*cosang-vec["x"]*math.sqrt(1-cosang*cosang)
+  return new
+  end
+
+function vreroty (vec, cosang)
+  local new = vec
+  new["x"] = vec["x"]*math.sqrt(1-cosang*cosang)-vec["z"]*cosang
+  new["z"] = vec["x"]*cosang-vec["z"]*math.sqrt(1-cosang*cosang)
+  return new
+  end
+
+function vrotz (vec, cosang)
+  local new = vec
+  new["x"] = vec["x"]*cosang-vec["y"]*math.sqrt(1-cosang*cosang)
+  new["y"] = vec["x"]*math.sqrt(1-cosang*cosang)+vec["y"]*cosang
+  return new
+  end
+
+function vrerotz (vec, cosang)
+  local new = vec
+  new["x"] = vec["y"]*cosang-vec["x"]*math.sqrt(1-cosang*cosang)
+  new["y"] = vec["y"]*math.sqrt(1-cosang*cosang)-vec["x"]*cosang
+  return new
+  end
+
+function trialateration (v1, v2, v3, v4, s1, s2, s3, s4)
+  local new = {}
+  local v11 = vsub(v1, v1) -- make a sphere with 0.0.0 center
+  local v21 = vsub(v2, v1)
+  local v31 = vsub(v3, v1)
+  local v41 = vsub(v4, v1)
+  
+  
+  
   return new
   end
 
@@ -159,8 +192,4 @@ str = str:sub(str:find(",")+2, #str)
 s3 = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 s4 = tonumber(str)
-print(v1["x"], " ", v1["y"], " ", v1["z"])
-print(v2["x"], " ", v2["y"], " ", v2["z"])
-print(v3["x"], " ", v3["y"], " ", v3["z"])
-print(v4["x"], " ", v4["y"], " ", v4["z"])
-print(s1, " ", s2, " ", s3, " ", s4)
+
