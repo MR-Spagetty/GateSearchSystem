@@ -3,6 +3,9 @@ local math = require("math")
 local mod = require("modem")
 local event = require("event")
 local pc = require("computer")
+local term = require("term")
+local serial = require("serialization")
+local string = require("string")
 
 function vprojxy (vec)
   local new = vec
@@ -92,3 +95,16 @@ function vrotz (vec, ang)
   new["y"] = vec["x"]*math.sin(ang)+vec["y"]*math.cos(ang)
   return new
   end
+
+local v1, v2, v3, v4 = {"x" = {}, "y" = {}, "z" = {})
+local s1, s2, s3, s4 = 0
+local str 
+print("Write v1 coordinates. Comma+space is a number separator. Dot is the fractional part separator. Example: 1, 1.53, -23")
+str = term.read()
+str = str:sub(1, str:find("n")-2)
+v1["x"] = tonumber(str:sub(1, str:find(",")-1))
+str = str:sub(str:find(",")+2, #str)
+v2["y"] = tonumber(str:sub(1, str:find(",")-1))
+str = str:sub(str:find(",")+2, #str)
+v3["z"] = tonumber(str)
+--a["x"] = tonumber(str:sub(1, str:find(",")-1)) str = str:sub(str:find(",")+2, #str)
