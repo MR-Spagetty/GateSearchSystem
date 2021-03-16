@@ -209,119 +209,59 @@ function valtdiv (vx, vy, vz, num)
   return new
   end
 
-function vrotx (vec, cosang, sinang)
-  local new
-  new = valtrotx(vec.x, vec.y, vec.z, cosang, sinang)
-  new = vround(new)
-  return new
-  end
+function vrotx(vec)
+local new = {}
+new.x = vec.x
+new.y = 0
+new.z = math.sqrt(vec.y*vec.y+vec.z*vec.z)
+local cosang = vec.z/(math.sqrt(vec.y*vec.y+vec.z*vec.z))
+local sinang = math.sqrt(1 - cosang*cosang) * (vec.y/math.abs(vec.y))
+return new, cosang, sinang
+end
 
-function valtrotx (vx, vy, vz, cosang, sinang)
-  local zs = vz * sinang
-  local yc = vy * cosang
-  local zc = vz * cosang
-  local ys = vy * sinang
-  local new = {}
-  new.x = vx
-  new.y = yc - zs
-  new.z = ys + zc
-  return new
-  end
+function vrerotx(vec, cos, sin)
+local new = {}
+new.x = vec.x
+new.z = vec.z * cos
+new.y = vec.z * sin
+return new
+end
 
-function vrerotx (vec, cosang, sinang, sinang)
-  local new
-  new = valtrerotx(vec.x, vec.y, vec.z, cosang, sinang)
-  new = vround(new)
-  return new
-  end
+--[[function vroty(vec)
+local new = {}
+new.x = vec.x
+new.y = 0
+new.z = math.sqrt(vec.y*vec.y+vec.z*vec.z)
+local cosang = vec.z/(math.sqrt(vec.y*vec.y+vec.z*vec.z))
+local sinang = math.sqrt(1 - cosang*cosang) * (vec.y/math.abs(vec.y))
+return new, cosang, sinang
+end
 
-function valtrerotx (vx, vy, vz, cosang, sinang)
-  local zs = vz * sinang
-  local yc = vy * cosang
-  local zc = vz * cosang
-  local ys = vy * sinang
-  local new = {}
-  new.x = vx
-  new.y = zs - yc
-  new.z = zc - ys
-  return new
-  end
+function vreroty(vec, cos, sin)
+local new = {}
+new.x = vec.x
+new.z = vec.z * cos
+new.y = vec.z * sin
+return new
+end
 
-function vroty (vec, cosang, sinang)
-  local new
-  new = valtroty(vec.x, vec.y, vec.z, cosang, sinang)
-  new = vround(new)
-  return new
-  end
+function vrotz(vec)
+local new = {}
+new.x = vec.x
+new.y = 0
+new.z = math.sqrt(vec.y*vec.y+vec.z*vec.z)
+local cosang = vec.z/(math.sqrt(vec.y*vec.y+vec.z*vec.z))
+local sinang = math.sqrt(1 - cosang*cosang) * (vec.y/math.abs(vec.y))
+return new, cosang, sinang
+end
 
-function valtroty (vx, vy, vz, cosang, sinang)
-  local zs = vz * sinang
-  local xc = vx * cosang
-  local zc = vz * cosang
-  local xs = vx * sinang
-  local new = {}
-  new.x = xc + zs
-  new.y = vy
-  new.z = zc - xs
-  return new
-  end
-
-function vreroty (vec, cosang, sinang)
-  local new
-  new = valtreroty(vec.x, vec.y, vec.z, cosang, sinang)
-  new = vround(new)
-  return new
-  end
-
-function valtreroty (vx, vy, vz, cosang, sinang)
-  local zs = vz * sinang
-  local xc = vx * cosang
-  local zc = vz * cosang
-  local xs = vx * sinang
-  local new = {}
-  new.x = vx*sinang - vz*cosang
-  new.y = vy
-  new.z = vx*cosang - vz*sinang
-  return new
-  end
-
-function vrotz (vec, cosang, sinang)
-  local new
-  new = valtrotz(vec.x, vec.y, vec.z, cosang, sinang)
-  new = vround(new)
-  return new
-  end
-
-function valtrotz (vx, vy, vz, cosang, sinang)
-  local ys = vy * sinang
-  local xc = vx * cosang
-  local yc = vy * cosang
-  local xs = vx * sinang
-  local new = {}
-  new.x = xc - ys
-  new.y = xs + yc
-  new.z = vz
-  return new
-  end
-
-function vrerotz (vec, cosang, sinang)
-  local new
-  new = valtrerotz(vec.x, vec.y, vec.z, cosang, sinang)
-  new = vround(new)
-  return new
-  end
-
-function valtrerotz (vx, vy, vz, cosang, sinang)
-  local ys = vy * sinang
-  local xc = vx * cosang
-  local yc = vy * cosang
-  local xs = vx * sinang
-  local new = {}
-  new.x = yc - xs
-  new.y = ys - xc
-  new.z = vz
-  return new
-  end
+function vrerotz(vec, cos, sin) 
+local new = {}
+new.x = vec.x
+new.z = vec.z * cos
+new.y = vec.z * sin
+return new
+end]]
 
 function trialateration (v1, v2, v3, v4, s1, s2, s3, s4)
   local new = {}
@@ -334,24 +274,6 @@ function trialateration (v1, v2, v3, v4, s1, s2, s3, s4)
   
   return new
   end
-  
-function test(v1)
-local new = {}
-new.x = v1.x
-new.y = 0
-new.z = math.sqrt(v1.y*v1.y+v1.z*v1.z)
-local cosang = v1.z/(math.sqrt(v1.y*v1.y+v1.z*v1.z))
-local sinang = math.sqrt(1 - cosang*cosang) * (v1.y/math.abs(v1.y))
-return new, cosang, sinang
-end
-
-function retest(v1, cos, sin)
-local new = {}
-new.x = v1.x
-new.z = v1.z * cos
-new.y = v1.z * sin
-return new
-end
 
 local v1 = {}
 local v2 = {}
@@ -426,13 +348,13 @@ gpu.set(1,3*i-2,"Original")
 gpu.set(21, 3*i-2, tostring(v1.x))
 gpu.set(41, 3*i-2, tostring(v1.y))
 gpu.set(61, 3*i-2, tostring(v1.z))
-local testvec, testcos, testsin = test(v1)
+local testvec, testcos, testsin = vrotx(v1)
 gpu.set(1,3*i-1,"Rotate")
 gpu.set(21, 3*i-1, tostring(testvec.x))
 gpu.set(41, 3*i-1, tostring(testvec.y))
 gpu.set(61, 3*i-1, tostring(testvec.z))
 gpu.set(1,3*i,"Rotate and rerotate")
-gpu.set(21, 3*i, tostring(retest(testvec, testcos, testsin).x))
-gpu.set(41, 3*i, tostring(retest(testvec, testcos, testsin).y))
-gpu.set(61, 3*i, tostring(retest(testvec, testcos, testsin).z))
+gpu.set(21, 3*i, tostring(vrerotx(testvec, testcos, testsin).x))
+gpu.set(41, 3*i, tostring(vrerotx(testvec, testcos, testsin).y))
+gpu.set(61, 3*i, tostring(vrerotx(testvec, testcos, testsin).z))
 end
