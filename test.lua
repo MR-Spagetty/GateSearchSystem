@@ -340,7 +340,7 @@ local new = {}
 new.x = v1.x
 new.y = 0
 new.z = math.sqrt(v1.y*v1.y+v1.z*v1.z)
-local cosang = v1.z/(vlen(v1))
+local cosang = v1.z/(math.sqrt(v1.y*v1.y+v1.z*v1.z))
 local sinang = math.sqrt(1 - cosang*cosang) * (v1.y/math.abs(v1.y))
 return new, cosang, sinang
 end
