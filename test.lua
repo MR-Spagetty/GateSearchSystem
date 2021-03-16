@@ -6,8 +6,53 @@ local pc = require("computer")
 local term = require("term")
 local serial = require("serialization")
 local string = require("string")
+local gpu = comp.gpu
+local rounder = 1000000000
 
-function vprojxy (vx, vy, vz)
+local vi = {}
+local vj = {}
+local vk = {}
+vi.x = 1
+vi.y = 0
+vi.z = 0
+vj.x = 0
+vj.y = 1
+vj.z = 0
+vk.x = 0
+vk.y = 0
+vk.z = 1
+
+function vround(vec)
+local new = {}
+new = valtround(vec.x, vec.y, vec.z)
+return new
+end
+
+function valtround(vx, vy, vz)
+local new = {}
+new.x = vx
+new.y = vy
+new.z = vz
+local t1, t2 = 0
+t1, t2 = math.modf(vx)
+t2 = t2 - math.fmod(t2*rounder, 1)/rounder
+new.x = t1+t2
+t1, t2 = math.modf(vy)
+t2 = t2 - math.fmod(t2*rounder, 1)/rounder
+new.y = t1+t2
+t1, t2 = math.modf(vz)
+t2 = t2 - math.fmod(t2*rounder, 1)/rounder
+new.z = t1+t2
+return new
+end
+
+function vprojxy(vec)
+local new = {}
+new = valtprojxy(vec.x, vec.y, vec.z)
+return new
+end
+
+function valtprojxy (vx, vy, vz)
   local vec = {}
   vec.x = vx
   vec.y = vy
@@ -17,7 +62,13 @@ function vprojxy (vx, vy, vz)
   return new
   end
 
-function vprojyz (vx, vy, vz)
+function vprojyz(vec)
+local new = {}
+new = valtprojyz(vec.x, vec.y, vec.z)
+return new
+end
+
+function valtprojyz (vx, vy, vz)
   local vec = {}
   vec.x = vx
   vec.y = vy
@@ -27,7 +78,13 @@ function vprojyz (vx, vy, vz)
   return new
   end
 
-function vprojxz (vx, vy, vz)
+function vprojxz(vec)
+local new = {}
+new = valtprojxz(vec.x, vec.y, vec.z)
+return new
+end
+
+function valtprojxz (vx, vy, vz)
   local vec = {}
   vec.x = vx
   vec.y = vy
@@ -37,29 +94,64 @@ function vprojxz (vx, vy, vz)
   return new
   end
 
-function vlen(vx, vy, vz)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
+function vlen(vec)
+local new = 0
+new = valtlen(vec.x, vec.y, vec.z)
+return new
+end
+
+function valtlen(vx, vy, vz)
   local new
-  new = math.sqrt(vec.x*vec.x+vec.y*vec.y+vec.z*vec.z)
+  new = math.sqrt(vx*vx+vy*vy+vz*vz)
   return new
   end
 
-function vcosab (ax, ay, az, bx, by, bz)
+function vmulvec(a, b)
+local new = {}
+new = valtmulvec(a.x, a.y, a.z, b.x, b.y, b.z)
+return new
+end
+
+function valtmulvec(ax, ay, az, bx, by, bz)
+local new = {}
+new.x = ax*bx
+new.y = ay*by
+new.z = az*bz
+return new
+end
+  
+function vcosab(a, b)
+local new = 0
+new = valtcosab(a.x, a.y, a.z, b.x, b.y, b.z)
+return new
+end
+
+function valtcosab (ax, ay, az, bx, by, bz)
   local cos
-  cos = (ax*bx+ay*by+az*bz)/(vlen(ax, ay, az)*vlen(bx, by, bz))
+  cos = (ax*bx+ay*by+az*bz)/(valtlen(ax, ay, az)*valtlen(bx, by, bz))
   return cos
   end
+  
+function vsinab(a, b)
+local new = 0
+new = valtsinab(a.x, a.y, a.z, b.x, b.y, b.z)
+return new
+end
 
-function vsinab (ax, ay, az, bx, by, bz)
+function valtsinab (ax, ay, az, bx, by, bz)
   local sin
-  sin = math.sqrt(1-math.pow(vcosab(ax, ay, az, bx, by, bz), 2))
+  sin = math.sqrt(1 - valtcosab(ax, ay, az, bx, by, bz)*valtcosab(ax, ay, az, bx, by, bz))
+  if (bx == 1 and ay < 0) or (by == 1 and az < 0) or (bz == 1 and ax < 0) then sin = 0-sin end
   return sin
   end
 
-function vadd (ax, ay, az, bx, by, bz)
+function vadd(a, b)
+  local new = {}
+  new = valtadd(a.x, a.y, a.z, b.x, b.y, b.z)
+  return new
+  end
+
+function valtadd (ax, ay, az, bx, by, bz)
   local new = {}
   new.x = ax + bx
   new.y = ay + by
@@ -67,7 +159,13 @@ function vadd (ax, ay, az, bx, by, bz)
   return new
   end
 
-function vsub (ax, ay, az, bx, by, bz)
+function vsub(a, b)
+  local new = {}
+  new = valtsub(a.x, a.y, a.z, b.x, b.y, b.z)
+  return new
+  end
+
+function valtsub (ax, ay, az, bx, by, bz)
   local new = {}
   new.x = ax - bx
   new.y = ay - by
@@ -75,7 +173,13 @@ function vsub (ax, ay, az, bx, by, bz)
   return new
   end
 
-function vmul (vx, vy, vz, num)
+function vmul(vec, num)
+  local new = {}
+  new = valtmul(vec.x, vec.y, vec.z, num)
+  return new
+  end
+
+function valtmul (vx, vy, vz, num)
   local vec = {}
   vec.x = vx
   vec.y = vy
@@ -87,7 +191,13 @@ function vmul (vx, vy, vz, num)
   return new
   end
 
-function vdiv (vx, vy, vz, num)
+function vdiv(vec, num)
+  local new = {}
+  new = valtdiv(vec.x, vec.y, vec.z, num)
+  return new
+  end
+
+function valtdiv (vx, vy, vz, num)
   local vec = {}
   vec.x = vx
   vec.y = vy
@@ -99,99 +209,149 @@ function vdiv (vx, vy, vz, num)
   return new
   end
 
-function vrotx (vx, vy, vz, cosang)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
-  new.y = vec.y*cosang-vec.z*math.sqrt(1-cosang*cosang)
-  new.z = vec.y*math.sqrt(1-cosang*cosang)+vec.z*cosang
+function vrotx (vec, cosang, sinang)
+  local new
+  new = valtrotx(vec.x, vec.y, vec.z, cosang, sinang)
+  new = vround(new)
   return new
   end
 
-function vrerotx (vx, vy, vz, cosang)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
-  new.y = vec.z*math.sqrt(1-cosang*cosang)-vec.y*cosang
-  new.z = vec.z*cosang-vec.y*math.sqrt(1-cosang*cosang)
-  return new
-  end
-
-function vroty (vx, vy, vz, cosang)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
-  new.x = vec.x*cosang+vec.z*math.sqrt(1-cosang*cosang)
-  new.z = vec.z*cosang-vec.x*math.sqrt(1-cosang*cosang)
-  return new
-  end
-
-function vreroty (vx, vy, vz, cosang)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
-  new.x = vec.x*math.sqrt(1-cosang*cosang)-vec.z*cosang
-  new.z = vec.x*cosang-vec.z*math.sqrt(1-cosang*cosang)
-  return new
-  end
-
-function vrotz (vx, vy, vz, cosang)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
-  new.x = vec.x*cosang-vec.y*math.sqrt(1-cosang*cosang)
-  new.y = vec.x*math.sqrt(1-cosang*cosang)+vec.y*cosang
-  return new
-  end
-
-function vrerotz (vx, vy, vz, cosang)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
-  new.x = vec.y*cosang-vec.x*math.sqrt(1-cosang*cosang)
-  new.y = vec.y*math.sqrt(1-cosang*cosang)-vec.x*cosang
-  return new
-  end
-
-function trialateration (v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z, v4x, v4y, v4z, s1, s2, s3, s4)
-  local v1 = {}
-  v1.x = v1x
-  v1.y = v1y
-  v1.z = v1z
-  local v2 = {}
-  v2.x = v2x
-  v2.y = v2y
-  v2.z = v2z
-  local v3 = {}
-  v3.x = v3x
-  v3.y = v3y
-  v3.z = v3z
-  local v4 = {}
-  v4.x = v4x
-  v4.y = v4y
-  v4.z = v4z
+function valtrotx (vx, vy, vz, cosang, sinang)
+  local zs = vz * sinang
+  local yc = vy * cosang
+  local zc = vz * cosang
+  local ys = vy * sinang
   local new = {}
-  local v11 = vsub(v1.x, v1.y, v1.z, v1.x, v1.y, v1.z) -- make a sphere with 0.0.0 center
-  local v21 = vsub(v2.x, v2.y, v2.z, v1.x, v1.y, v1.z)
-  local v31 = vsub(v3.x, v3.y, v3.z, v1.x, v1.y, v1.z)
-  local v41 = vsub(v4.x, v4.y, v4.z, v1.x, v1.y, v1.z)
+  new.x = vx
+  new.y = yc - zs
+  new.z = ys + zc
+  return new
+  end
+
+function vrerotx (vec, cosang, sinang, sinang)
+  local new
+  new = valtrerotx(vec.x, vec.y, vec.z, cosang, sinang)
+  new = vround(new)
+  return new
+  end
+
+function valtrerotx (vx, vy, vz, cosang, sinang)
+  local zs = vz * sinang
+  local yc = vy * cosang
+  local zc = vz * cosang
+  local ys = vy * sinang
+  local new = {}
+  new.x = vx
+  new.y = zs - yc
+  new.z = zc - ys
+  return new
+  end
+
+function vroty (vec, cosang, sinang)
+  local new
+  new = valtroty(vec.x, vec.y, vec.z, cosang, sinang)
+  new = vround(new)
+  return new
+  end
+
+function valtroty (vx, vy, vz, cosang, sinang)
+  local zs = vz * sinang
+  local xc = vx * cosang
+  local zc = vz * cosang
+  local xs = vx * sinang
+  local new = {}
+  new.x = xc + zs
+  new.y = vy
+  new.z = zc - xs
+  return new
+  end
+
+function vreroty (vec, cosang, sinang)
+  local new
+  new = valtreroty(vec.x, vec.y, vec.z, cosang, sinang)
+  new = vround(new)
+  return new
+  end
+
+function valtreroty (vx, vy, vz, cosang, sinang)
+  local zs = vz * sinang
+  local xc = vx * cosang
+  local zc = vz * cosang
+  local xs = vx * sinang
+  local new = {}
+  new.x = vx*sinang - vz*cosang
+  new.y = vy
+  new.z = vx*cosang - vz*sinang
+  return new
+  end
+
+function vrotz (vec, cosang, sinang)
+  local new
+  new = valtrotz(vec.x, vec.y, vec.z, cosang, sinang)
+  new = vround(new)
+  return new
+  end
+
+function valtrotz (vx, vy, vz, cosang, sinang)
+  local ys = vy * sinang
+  local xc = vx * cosang
+  local yc = vy * cosang
+  local xs = vx * sinang
+  local new = {}
+  new.x = xc - ys
+  new.y = xs + yc
+  new.z = vz
+  return new
+  end
+
+function vrerotz (vec, cosang, sinang)
+  local new
+  new = valtrerotz(vec.x, vec.y, vec.z, cosang, sinang)
+  new = vround(new)
+  return new
+  end
+
+function valtrerotz (vx, vy, vz, cosang, sinang)
+  local ys = vy * sinang
+  local xc = vx * cosang
+  local yc = vy * cosang
+  local xs = vx * sinang
+  local new = {}
+  new.x = yc - xs
+  new.y = ys - xc
+  new.z = vz
+  return new
+  end
+
+function trialateration (v1, v2, v3, v4, s1, s2, s3, s4)
+  local new = {}
+  local v11 = vsub(v1, v1) -- make a sphere with 0.0.0 center
+  local v21 = vsub(v2, v1)
+  local v31 = vsub(v3, v1)
+  local v41 = vsub(v4, v1)
   
   
   
   return new
   end
+  
+function test(v1)
+local new = {}
+new.x = v1.x
+new.y = 0
+new.z = math.sqrt(v1.y*v1.y+v1.z*v1.z)
+local cosang = v1.z/(vlen(v1))
+local sinang = math.sqrt(1 - cosang*cosang) * (v1.y/math.abs(v1.y))
+return new, cosang, sinang
+end
+
+function retest(v1, cos, sin)
+local new = {}
+new.x = v1.x
+new.z = v1.z * cos
+new.y = v1.z * sin
+return new
+end
 
 local v1 = {}
 local v2 = {}
@@ -199,7 +359,7 @@ local v3 = {}
 local v4 = {}
 local s1, s2, s3, s4 = 0
 local str 
-print("Write starting point (SP) #1 coordinates.")
+--[[print("Write starting point (SP) #1 coordinates.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, -23")
 str = term.read()
@@ -210,7 +370,7 @@ str = str:sub(str:find(",")+2, #str)
 v1.y = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 v1.z = tonumber(str)
---[[print("Write SP #2 coordinates.")
+print("Write SP #2 coordinates.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, -23")
 str = term.read()
@@ -256,6 +416,23 @@ str = str:sub(str:find(",")+2, #str)
 s3 = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 s4 = tonumber(str)]]
-print(v1.x, v1.y, v1.z)
-print(vprojxy(v1.x, v1.y, v1.z).x, vprojxy(v1.x, v1.y, v1.z).y, vprojxy(v1.x, v1.y, v1.z).z)
-print(vrotx(v1.x, v1.y, v1.z, 0.5))
+term.clear()
+for i = 1, 16 do
+if math.fmod(i,2) == 1 then gpu.setBackground(0, true) gpu.setForeground(15, true) else gpu.setForeground(0, true) gpu.setBackground(15, true) end
+v1.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v1.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v1.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+gpu.set(1,3*i-2,"Original")
+gpu.set(21, 3*i-2, tostring(v1.x))
+gpu.set(41, 3*i-2, tostring(v1.y))
+gpu.set(61, 3*i-2, tostring(v1.z))
+local testvec, testcos, testsin = test(v1)
+gpu.set(1,3*i-1,"Rotate")
+gpu.set(21, 3*i-1, tostring(testvec.x))
+gpu.set(41, 3*i-1, tostring(testvec.y))
+gpu.set(61, 3*i-1, tostring(testvec.z))
+gpu.set(1,3*i,"Rotate and rerotate")
+gpu.set(21, 3*i, tostring(retest(testvec, testcos, testsin).x))
+gpu.set(41, 3*i, tostring(retest(testvec, testcos, testsin).y))
+gpu.set(61, 3*i, tostring(retest(testvec, testcos, testsin).z))
+end
