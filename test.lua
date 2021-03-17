@@ -7,7 +7,7 @@ local term = require("term")
 local serial = require("serialization")
 local string = require("string")
 local gpu = comp.gpu
-local rounder = 1000000000
+local rounder = 1000000000000
 
 local vi = {}
 local vj = {}
@@ -21,6 +21,7 @@ vj.z = 0
 vk.x = 0
 vk.y = 0
 vk.z = 1
+term.clear()
 
 function vround(vec)
 local new = {}
@@ -211,68 +212,144 @@ function valtdiv (vx, vy, vz, num)
 
 function vrotx(vec)
 local new = {}
-new.x = vec.x
-new.y = 0
-new.z = math.sqrt(vec.y*vec.y+vec.z*vec.z)
-local cosang = vec.z/(math.sqrt(vec.y*vec.y+vec.z*vec.z))
-local sinang = math.sqrt(1 - cosang*cosang) * (vec.y/math.abs(vec.y))
+local sinang, cosang = 0
+  if (vec.y == 0) then
+  new = vec
+  sinang = 0
+  cosang = 1
+  else
+  new.x = vec.x
+  new.y = 0
+  new.z = math.sqrt(vec.y*vec.y+vec.z*vec.z)
+  cosang = vec.z/(math.sqrt(vec.y*vec.y+vec.z*vec.z))
+  sinang = math.sqrt(1 - cosang*cosang) * (vec.y/math.abs(vec.y))
+  end
 return new, cosang, sinang
+end
+
+function vangrotx(vec, cos, sin)
+local new = {}
+new.x = vec.x
+new.y = vec.y*cos - vec.z*sin
+new.z = vec.y*sin + vec.z*cos
+return new
 end
 
 function vrerotx(vec, cos, sin)
 local new = {}
 new.x = vec.x
-new.z = vec.z * cos
-new.y = vec.z * sin
+new.y = vec.z * sin + vec.y * cos
+new.z = vec.z * cos - vec.y * sin
 return new
 end
 
---[[function vroty(vec)
+function vroty(vec)
 local new = {}
-new.x = vec.x
-new.y = 0
-new.z = math.sqrt(vec.y*vec.y+vec.z*vec.z)
-local cosang = vec.z/(math.sqrt(vec.y*vec.y+vec.z*vec.z))
-local sinang = math.sqrt(1 - cosang*cosang) * (vec.y/math.abs(vec.y))
+local sinang, cosang = 0
+  if (vec.z == 0) then
+  new = vec
+  sinang = 0
+  cosang = 1
+  else
+  new.x = math.sqrt(vec.x*vec.x+vec.z*vec.z)
+  new.y = vec.y
+  new.z = 0
+  cosang = vec.x/(math.sqrt(vec.x*vec.x+vec.z*vec.z))
+  sinang = math.sqrt(1 - cosang*cosang) * (vec.z/math.abs(vec.z))
+  end
 return new, cosang, sinang
+end
+
+function vangroty(vec, cos, sin)
+local new = {}
+new.x = vec.z * cos - vec.x * sin
+new.y = vec.y
+new.z = vec.z * sin + vec.x * cos
+return new
 end
 
 function vreroty(vec, cos, sin)
 local new = {}
-new.x = vec.x
-new.z = vec.z * cos
-new.y = vec.z * sin
+new.x = vec.x * cos - vec.z * sin
+new.y = vec.y
+new.z = vec.x * sin + vec.z * cos
 return new
 end
 
 function vrotz(vec)
 local new = {}
-new.x = vec.x
-new.y = 0
-new.z = math.sqrt(vec.y*vec.y+vec.z*vec.z)
-local cosang = vec.z/(math.sqrt(vec.y*vec.y+vec.z*vec.z))
-local sinang = math.sqrt(1 - cosang*cosang) * (vec.y/math.abs(vec.y))
+local sinang, cosang = 0
+  if (vec.x == 0) then
+  new = vec
+  sinang = 0
+  cosang = 1
+  else
+  new.x = 0
+  new.y = math.sqrt(vec.y*vec.y+vec.x*vec.x)
+  new.z = vec.z
+  cosang = vec.y/(math.sqrt(vec.y*vec.y+vec.x*vec.x))
+  sinang = math.sqrt(1 - cosang*cosang) * (vec.x/math.abs(vec.x))
+  end
 return new, cosang, sinang
+end
+
+function vangrotz(vec, cos, sin)
+local new = {}
+new.x = vec.x * cos - vec.y * sin
+new.y = vec.x * sin + vec.y * cos
+new.z = vec.z
+return new
 end
 
 function vrerotz(vec, cos, sin) 
 local new = {}
-new.x = vec.x
-new.z = vec.z * cos
-new.y = vec.z * sin
+new.x = vec.y * sin + vec.x * cos
+new.y = vec.y * cos - vec.x * sin
+new.z = vec.z
 return new
-end]]
+end
 
-function trialateration (v1, v2, v3, v4, s1, s2, s3, s4)
+function trilateration (v1, v2, v3, v4, s1, s2, s3, s4)
   local new = {}
   local v11 = vsub(v1, v1) -- make a sphere with 0.0.0 center
   local v21 = vsub(v2, v1)
   local v31 = vsub(v3, v1)
   local v41 = vsub(v4, v1)
-  
-  
-  
-  return new
+  local v22, tricos1, trisin1 = vroty(v21) -- make a sphere with x.0.0 center
+  local v32 = vangroty(v31, tricos1, trisin1)
+  local v42 = vangroty(v41, tricos1, trisin1)
+  local tricos2 = vcosab(vprojxy(v22), vi)
+  local trisin2 = vsinab(vprojxy(v22), vi)
+  local v23 = vrerotz(v22, tricos2, trisin2) 
+  local v33 = vrerotz(v32, tricos2, trisin2)
+  local v43 = vrerotz(v42, tricos2, trisin2)
+  local tricos3 = vcosab(vprojyz(v33), vj)
+  local trisin3 = vsinab(vprojyz(v33), vj)
+  local v34 = vrerotx(v33, tricos3, trisin3) -- make a sphere with x.y.0 center
+  local v44 = vrerotx(v43, tricos3, trisin3)
+  new.x = (s1*s1-s2*s2+v22.x*v22.x)/(2*v22.x)
+  new.y = (s1*s1 - s3*s3 + v34.x*v34.x + v34.y*v34.y) / (2*v34.y) - new.x*v34.x/v34.y
+  local mayz = math.sqrt(math.abs(s1*s1-new.x*new.x-new.y*new.y))
+  local check = 0
+    if (math.abs(s1*s1-((new.x-v11.x)*(new.x-v11.x)+(new.y-v11.y)*(new.y-v11.y)+(mayz-v11.z)*(mayz-v11.z))) <= math.abs(s1*s1-((new.x-v11.x)*(new.x-v11.x)+(new.y-v11.y)*(new.y-v11.y)+(0-mayz-v11.z)*(0-mayz-v11.z)))) then
+    check = check +1 end
+    if (math.abs(s2*s2-((new.x-v23.x)*(new.x-v23.x)+(new.y-v23.y)*(new.y-v23.y)+(mayz-v23.z)*(mayz-v23.z))) <= math.abs(s2*s2-((new.x-v23.x)*(new.x-v23.x)+(new.y-v23.y)*(new.y-v23.y)+(0-mayz-v23.z)*(0-mayz-v23.z)))) then
+    check = check +1 end
+    if (math.abs(s3*s3-((new.x-v34.x)*(new.x-v34.x)+(new.y-v34.y)*(new.y-v34.y)+(mayz-v34.z)*(mayz-v34.z))) <= math.abs(s3*s3-((new.x-v34.x)*(new.x-v34.x)+(new.y-v34.y)*(new.y-v34.y)+(0-mayz-v34.z)*(0-mayz-v34.z)))) then
+    check = check + 1 end
+    if (math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(mayz-v44.z)*(mayz-v44.z))) <= math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(0-mayz-v44.z)*(0-mayz-v44.z)))) then
+    check = check + 1 end
+  gpu.set(1, 40, tostring(check))
+    if check > 2 then
+    new.z = mayz
+    else
+    new.z = 0-mayz
+    end
+  local newx = vangrotx(new, tricos3, trisin3)
+  local newxz = vangrotz(newx, tricos2, trisin2)
+  local newxyz = vreroty(newxz, tricos1, trisin1)
+  local newtarg = vadd(newxyz, v1)
+  return newtarg
   end
 
 local v1 = {}
@@ -337,24 +414,61 @@ s2 = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 s3 = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
-s4 = tonumber(str)]]
-term.clear()
-for i = 1, 16 do
+s4 = tonumber(str)
+trilateration(v1, v2, v3, v4, s1, s2, s3, s4)]]
+local vtarg = {}
+vtarg.x = 2000000
+vtarg.y = 2000000
+vtarg.z = 3000000
+for i = 1, 5 do
 if math.fmod(i,2) == 1 then gpu.setBackground(0, true) gpu.setForeground(15, true) else gpu.setForeground(0, true) gpu.setBackground(15, true) end
-v1.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+--[[v1.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
 v1.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
 v1.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-gpu.set(1,3*i-2,"Original")
-gpu.set(21, 3*i-2, tostring(v1.x))
-gpu.set(41, 3*i-2, tostring(v1.y))
-gpu.set(61, 3*i-2, tostring(v1.z))
-local testvec, testcos, testsin = vrotx(v1)
-gpu.set(1,3*i-1,"Rotate")
-gpu.set(21, 3*i-1, tostring(testvec.x))
-gpu.set(41, 3*i-1, tostring(testvec.y))
-gpu.set(61, 3*i-1, tostring(testvec.z))
-gpu.set(1,3*i,"Rotate and rerotate")
-gpu.set(21, 3*i, tostring(vrerotx(testvec, testcos, testsin).x))
-gpu.set(41, 3*i, tostring(vrerotx(testvec, testcos, testsin).y))
-gpu.set(61, 3*i, tostring(vrerotx(testvec, testcos, testsin).z))
+v2.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v2.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v2.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v3.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v3.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v3.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v4.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v4.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v4.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))]]
+v3.x = 0-5+i*5
+v3.y = 1000
+v3.z = 0
+v2.x = 1000
+v2.y = 0
+v2.z = 0
+v4.x = 1000
+v4.y = 1000
+v4.z = 1000
+v1.x = 0
+v1.y = 0
+v1.z = 0
+ 
+gpu.fill(1, 5*i-4, 80, 5, " ")
+gpu.set(1,5*i-4,"Original 1")
+gpu.set(21, 5*i-4, tostring(v1.x))
+gpu.set(41, 5*i-4, tostring(v1.y))
+gpu.set(61, 5*i-4, tostring(v1.z))
+gpu.set(1,5*i-3,"Original 2")
+gpu.set(21, 5*i-3, tostring(v2.x))
+gpu.set(41, 5*i-3, tostring(v2.y))
+gpu.set(61, 5*i-3, tostring(v2.z))
+gpu.set(1,5*i-2,"Original 3")
+gpu.set(21, 5*i-2, tostring(v3.x))
+gpu.set(41, 5*i-2, tostring(v3.y))
+gpu.set(61, 5*i-2, tostring(v3.z))
+gpu.set(1,5*i-1,"Original 4")
+gpu.set(21, 5*i-1, tostring(v4.x))
+gpu.set(41, 5*i-1, tostring(v4.y))
+gpu.set(61, 5*i-1, tostring(v4.z))
+local tri = {}
+tri = trilateration(v1, v2, v3, v4, vlen(vsub(vtarg, v1)), vlen(vsub(vtarg, v2)), vlen(vsub(vtarg, v3)), vlen(vsub(vtarg, v4)))
+gpu.set(1,5*i,"Trilat point")
+gpu.set(21, 5*i, tostring(tri.x))
+gpu.set(41, 5*i, tostring(tri.y))
+gpu.set(61, 5*i, tostring(tri.z))
+os.sleep(0)
 end
