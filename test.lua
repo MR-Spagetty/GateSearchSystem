@@ -54,11 +54,9 @@ return new
 end
 
 function valtprojxy (vx, vy, vz)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
+  local new = {}
+  new.x = vx
+  new.y = vy
   new.z = 0
   return new
   end
@@ -70,11 +68,9 @@ return new
 end
 
 function valtprojyz (vx, vy, vz)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
+  local new = {}
+  new.y = vy
+  new.z = vz
   new.x = 0
   return new
   end
@@ -86,11 +82,9 @@ return new
 end
 
 function valtprojxz (vx, vy, vz)
-  local vec = {}
-  vec.x = vx
-  vec.y = vy
-  vec.z = vz
-  local new = vec
+  local new = {}
+  new.x = vx
+  new.z = vz
   new.y = 0
   return new
   end
@@ -262,9 +256,9 @@ end
 
 function vangroty(vec, cos, sin)
 local new = {}
-new.x = vec.z * cos - vec.x * sin
+new.x = vec.z * sin + vec.x * cos
 new.y = vec.y
-new.z = vec.z * sin + vec.x * cos
+new.z = vec.z * cos - vec.x * sin
 return new
 end
 
@@ -323,24 +317,18 @@ function trilateration (v1, v2, v3, v4, s1, s2, s3, s4)
   local v23 = vrerotz(v22, tricos2, trisin2) 
   local v33 = vrerotz(v32, tricos2, trisin2)
   local v43 = vrerotz(v42, tricos2, trisin2)
-  local tricos3 = vcosab(vprojyz(v33), vj)
-  local trisin3 = vsinab(vprojyz(v33), vj)
+  local vectimed = vprojyz(v33)
+  local tricos3 = vcosab(vectimed, vj)
+  local trisin3 = vsinab(vectimed, vj)
   local v34 = vrerotx(v33, tricos3, trisin3) -- make a sphere with x.y.0 center
   local v44 = vrerotx(v43, tricos3, trisin3)
-  new.x = (s1*s1-s2*s2+v22.x*v22.x)/(2*v22.x)
+  new.x = (s1*s1-s2*s2+v23.x*v23.x)/(2*v23.x)
   new.y = (s1*s1 - s3*s3 + v34.x*v34.x + v34.y*v34.y) / (2*v34.y) - new.x*v34.x/v34.y
-  local mayz = math.sqrt(math.abs(s1*s1-new.x*new.x-new.y*new.y))
-  local check = 0
-    if (math.abs(s1*s1-((new.x-v11.x)*(new.x-v11.x)+(new.y-v11.y)*(new.y-v11.y)+(mayz-v11.z)*(mayz-v11.z))) <= math.abs(s1*s1-((new.x-v11.x)*(new.x-v11.x)+(new.y-v11.y)*(new.y-v11.y)+(0-mayz-v11.z)*(0-mayz-v11.z)))) then
-    check = check +1 end
-    if (math.abs(s2*s2-((new.x-v23.x)*(new.x-v23.x)+(new.y-v23.y)*(new.y-v23.y)+(mayz-v23.z)*(mayz-v23.z))) <= math.abs(s2*s2-((new.x-v23.x)*(new.x-v23.x)+(new.y-v23.y)*(new.y-v23.y)+(0-mayz-v23.z)*(0-mayz-v23.z)))) then
-    check = check +1 end
-    if (math.abs(s3*s3-((new.x-v34.x)*(new.x-v34.x)+(new.y-v34.y)*(new.y-v34.y)+(mayz-v34.z)*(mayz-v34.z))) <= math.abs(s3*s3-((new.x-v34.x)*(new.x-v34.x)+(new.y-v34.y)*(new.y-v34.y)+(0-mayz-v34.z)*(0-mayz-v34.z)))) then
-    check = check + 1 end
+  local mayz = math.sqrt(math.abs(s1*s1-(new.x*new.x+new.y*new.y)))
+  local check = false
     if (math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(mayz-v44.z)*(mayz-v44.z))) <= math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(0-mayz-v44.z)*(0-mayz-v44.z)))) then
-    check = check + 1 end
-  gpu.set(1, 40, tostring(check))
-    if check > 2 then
+    check = true end
+    if check then
     new.z = mayz
     else
     new.z = 0-mayz
@@ -358,6 +346,7 @@ local v3 = {}
 local v4 = {}
 local s1, s2, s3, s4 = 0
 local str 
+local vtarg = {}
 --[[print("Write starting point (SP) #1 coordinates.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, -23")
@@ -416,13 +405,12 @@ s3 = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 s4 = tonumber(str)
 trilateration(v1, v2, v3, v4, s1, s2, s3, s4)]]
-local vtarg = {}
-vtarg.x = 2000000
-vtarg.y = 2000000
-vtarg.z = 3000000
-for i = 1, 5 do
+for i = 1, 8 do
+vtarg.x = math.random(-1*1000000, 1000000)
+vtarg.y = math.random(-1*1000000, 1000000)
+vtarg.z = math.random(-1*1000000, 1000000)
 if math.fmod(i,2) == 1 then gpu.setBackground(0, true) gpu.setForeground(15, true) else gpu.setForeground(0, true) gpu.setBackground(15, true) end
---[[v1.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+v1.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
 v1.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
 v1.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
 v2.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
@@ -433,42 +421,49 @@ v3.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(
 v3.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
 v4.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
 v4.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v4.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))]]
-v3.x = 0-5+i*5
-v3.y = 1000
-v3.z = 0
-v2.x = 1000
-v2.y = 0
-v2.z = 0
-v4.x = 1000
-v4.y = 1000
-v4.z = 1000
-v1.x = 0
+v4.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
+--[[v1.x = 0
 v1.y = 0
 v1.z = 0
+v2.x = 1000
+v2.y = 0-5000+i*5000
+v2.z = 0
+v3.x = 1000
+v3.y = 1000-5000+i*5000
+v3.z = 0
+v4.x = 1000
+v4.y = 1000-5000+i*5000
+v4.z = 1000]]
+
  
-gpu.fill(1, 5*i-4, 80, 5, " ")
-gpu.set(1,5*i-4,"Original 1")
-gpu.set(21, 5*i-4, tostring(v1.x))
-gpu.set(41, 5*i-4, tostring(v1.y))
-gpu.set(61, 5*i-4, tostring(v1.z))
-gpu.set(1,5*i-3,"Original 2")
-gpu.set(21, 5*i-3, tostring(v2.x))
-gpu.set(41, 5*i-3, tostring(v2.y))
-gpu.set(61, 5*i-3, tostring(v2.z))
-gpu.set(1,5*i-2,"Original 3")
-gpu.set(21, 5*i-2, tostring(v3.x))
-gpu.set(41, 5*i-2, tostring(v3.y))
-gpu.set(61, 5*i-2, tostring(v3.z))
-gpu.set(1,5*i-1,"Original 4")
-gpu.set(21, 5*i-1, tostring(v4.x))
-gpu.set(41, 5*i-1, tostring(v4.y))
-gpu.set(61, 5*i-1, tostring(v4.z))
+gpu.fill(1, 6*i-5, 80, 6, " ")
+gpu.set(1,6*i-5,"Original 1")
+gpu.set(21, 6*i-5, tostring(v1.x))
+gpu.set(41, 6*i-5, tostring(v1.y))
+gpu.set(61, 6*i-5, tostring(v1.z))
+gpu.set(1,6*i-4,"Original 2")
+gpu.set(21, 6*i-4, tostring(v2.x))
+gpu.set(41, 6*i-4, tostring(v2.y))
+gpu.set(61, 6*i-4, tostring(v2.z))
+gpu.set(1,6*i-3,"Original 3")
+gpu.set(21, 6*i-3, tostring(v3.x))
+gpu.set(41, 6*i-3, tostring(v3.y))
+gpu.set(61, 6*i-3, tostring(v3.z))
+gpu.set(1,6*i-2,"Original 4")
+gpu.set(21, 6*i-2, tostring(v4.x))
+gpu.set(41, 6*i-2, tostring(v4.y))
+gpu.set(61, 6*i-2, tostring(v4.z))
 local tri = {}
 tri = trilateration(v1, v2, v3, v4, vlen(vsub(vtarg, v1)), vlen(vsub(vtarg, v2)), vlen(vsub(vtarg, v3)), vlen(vsub(vtarg, v4)))
-gpu.set(1,5*i,"Trilat point")
-gpu.set(21, 5*i, tostring(tri.x))
-gpu.set(41, 5*i, tostring(tri.y))
-gpu.set(61, 5*i, tostring(tri.z))
+gpu.set(1,6*i-1,"Target point")
+gpu.set(21, 6*i-1, tostring(vtarg.x))
+gpu.set(41, 6*i-1, tostring(vtarg.y))
+gpu.set(61, 6*i-1, tostring(vtarg.z))
+gpu.set(1,6*i,"Calculated point")
+gpu.set(21, 6*i, tostring(tri.x))
+gpu.set(41, 6*i, tostring(tri.y))
+gpu.set(61, 6*i, tostring(tri.z))
 os.sleep(0)
 end
+
+
