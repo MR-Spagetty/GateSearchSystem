@@ -7,6 +7,7 @@ local term = require("term")
 local serial = require("serialization")
 local string = require("string")
 local gpu = comp.gpu
+local gate = comp.stargate
 local rounder = 1000000000000
 
 local vi = {}
@@ -22,6 +23,25 @@ vk.x = 0
 vk.y = 0
 vk.z = 1
 term.clear()
+
+function split(pString, pPattern)
+   local Table = {}  -- NOTE: use {n = 0} in Lua-5.0
+   local fpat = "(.-)" .. pPattern
+   local last_end = 1
+   local s, e, cap = pString:find(fpat, 1)
+   while s do
+      if s ~= 1 or cap ~= "" then
+     table.insert(Table,cap)
+      end
+      last_end = e+1
+      s, e, cap = pString:find(fpat, last_end)
+   end
+   if last_end <= #pString then
+      cap = pString:sub(last_end)
+      table.insert(Table, cap)
+   end
+   return Table
+end
 
 function vround(vec)
 local new = {}
@@ -303,7 +323,12 @@ new.z = vec.z
 return new
 end
 
-function trilateration (v1, v2, v3, v4, s1, s2, s3, s4)
+function trilateration (v1, v2, v3, v4, e1, e2, e3, e4)
+local s1, s2, s3, s4 = 0
+if e1/4608 > 4000 then s1 = math.pow(5000, (e1/4608/5000)) else s1 = e1/4608 / (0.8) end
+if e2/4608 > 4000 then s2 = math.pow(5000, (e2/4608/5000)) else s2 = e2/4608 / (0.8) end
+if e3/4608 > 4000 then s3 = math.pow(5000, (e3/4608/5000)) else s3 = e3/4608 / (0.8) end
+if e4/4608 > 4000 then s4 = math.pow(5000, (e4/4608/5000)) else s4 = e4/4608 / (0.8) end
   local new = {}
   local v11 = vsub(v1, v1) -- make a sphere with 0.0.0 center
   local v21 = vsub(v2, v1)
@@ -323,12 +348,14 @@ function trilateration (v1, v2, v3, v4, s1, s2, s3, s4)
   local v34 = vrerotx(v33, tricos3, trisin3) -- make a sphere with x.y.0 center
   local v44 = vrerotx(v43, tricos3, trisin3)
   new.x = (s1*s1-s2*s2+v23.x*v23.x)/(2*v23.x)
-  new.y = (s1*s1 - s3*s3 + v34.x*v34.x + v34.y*v34.y) / (2*v34.y) - new.x*v34.x/v34.y
+  local xrot = new.x/(math.modf(new.x*2)/2)
+  s1 = s1/xrot
+  new.x = new.x / xrot
+  --new.y = (s1*s1 - s3*s3 + v34.x*v34.x + v34.y*v34.y) / (2*v34.y) - new.x*(v34.x/v34.y)
+  new.y = (s1*s1 - s3*s3 + (v34.x*v34.x+v34.y*v34.y)-2*v34.x*new.x) / (2*v34.y)
   local mayz = math.sqrt(math.abs(s1*s1-(new.x*new.x+new.y*new.y)))
-  local check = false
-    if (math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(mayz-v44.z)*(mayz-v44.z))) <= math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(0-mayz-v44.z)*(0-mayz-v44.z)))) then
-    check = true end
-    if check then
+    --if (math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(mayz-v44.z)*(mayz-v44.z))) <= math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(0-mayz-v44.z)*(0-mayz-v44.z)))) then
+    if (math.abs(s4-math.sqrt(math.pow((new.x-v44.x), 2)+math.pow((new.y-v44.y), 2)+math.pow((mayz-v44.z),2))) <= math.abs(s4-math.sqrt(math.pow((new.x-v44.x), 2)+math.pow((new.y-v44.y), 2)+math.pow(((0-mayz)-v44.z),2)))) then
     new.z = mayz
     else
     new.z = 0-mayz
@@ -336,6 +363,8 @@ function trilateration (v1, v2, v3, v4, s1, s2, s3, s4)
   local newx = vangrotx(new, tricos3, trisin3)
   local newxz = vangrotz(newx, tricos2, trisin2)
   local newxyz = vreroty(newxz, tricos1, trisin1)
+ -- local newxy = vreroty(newx, tricos1, trisin1)
+ -- local newxyz = vangrotz(newxy, tricos2, trisin2)
   local newtarg = vadd(newxyz, v1)
   return newtarg
   end
@@ -347,6 +376,9 @@ local v4 = {}
 local s1, s2, s3, s4 = 0
 local str 
 local vtarg = {}
+
+
+
 --[[print("Write starting point (SP) #1 coordinates.")
 print ("Comma+space is a number separator. Dot is the fractional part separator.")
 print("Example: 1, 1.53, -23")
@@ -403,67 +435,144 @@ s2 = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
 s3 = tonumber(str:sub(1, str:find(",")-1))
 str = str:sub(str:find(",")+2, #str)
-s4 = tonumber(str)
-trilateration(v1, v2, v3, v4, s1, s2, s3, s4)]]
-for i = 1, 8 do
-vtarg.x = math.random(-1*1000000, 1000000)
-vtarg.y = math.random(-1*1000000, 1000000)
-vtarg.z = math.random(-1*1000000, 1000000)
-if math.fmod(i,2) == 1 then gpu.setBackground(0, true) gpu.setForeground(15, true) else gpu.setForeground(0, true) gpu.setBackground(15, true) end
-v1.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v1.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v1.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v2.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v2.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v2.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v3.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v3.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v3.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v4.x = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v4.y = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
-v4.z = math.random(-1*math.pow(10, math.fmod(i-1, 5)+1), math.pow(10, math.fmod(i-1, 5)+1))
---[[v1.x = 0
-v1.y = 0
-v1.z = 0
-v2.x = 1000
-v2.y = 0-5000+i*5000
-v2.z = 0
-v3.x = 1000
-v3.y = 1000-5000+i*5000
-v3.z = 0
-v4.x = 1000
-v4.y = 1000-5000+i*5000
-v4.z = 1000]]
-
- 
-gpu.fill(1, 6*i-5, 80, 6, " ")
-gpu.set(1,6*i-5,"Original 1")
-gpu.set(21, 6*i-5, tostring(v1.x))
-gpu.set(41, 6*i-5, tostring(v1.y))
-gpu.set(61, 6*i-5, tostring(v1.z))
-gpu.set(1,6*i-4,"Original 2")
-gpu.set(21, 6*i-4, tostring(v2.x))
-gpu.set(41, 6*i-4, tostring(v2.y))
-gpu.set(61, 6*i-4, tostring(v2.z))
-gpu.set(1,6*i-3,"Original 3")
-gpu.set(21, 6*i-3, tostring(v3.x))
-gpu.set(41, 6*i-3, tostring(v3.y))
-gpu.set(61, 6*i-3, tostring(v3.z))
-gpu.set(1,6*i-2,"Original 4")
-gpu.set(21, 6*i-2, tostring(v4.x))
-gpu.set(41, 6*i-2, tostring(v4.y))
-gpu.set(61, 6*i-2, tostring(v4.z))
-local tri = {}
-tri = trilateration(v1, v2, v3, v4, vlen(vsub(vtarg, v1)), vlen(vsub(vtarg, v2)), vlen(vsub(vtarg, v3)), vlen(vsub(vtarg, v4)))
-gpu.set(1,6*i-1,"Target point")
-gpu.set(21, 6*i-1, tostring(vtarg.x))
-gpu.set(41, 6*i-1, tostring(vtarg.y))
-gpu.set(61, 6*i-1, tostring(vtarg.z))
-gpu.set(1,6*i,"Calculated point")
-gpu.set(21, 6*i, tostring(tri.x))
-gpu.set(41, 6*i, tostring(tri.y))
-gpu.set(61, 6*i, tostring(tri.z))
+s4 = tonumber(str)]]
+mod.open(1000)
+mod.setStrength(10)
+print ("Get this gate coordinates")
+local coor = term.read()
+coor = coor:gsub("\n", "")
+local vec = {}
+vec = split(coor, ", ")
+v4.x = tonumber(vec[1])
+v4.y = tonumber(vec[2])
+v4.z = tonumber(vec[3])
+::slave1loop::
+print ("Get slave1 address")
+local str1 = term.read()
+str1 = str1:gsub("\n","")
+local adds1 = {}
+adds1 = split(str1, ", ")
+if gate.getEnergyRequiredToDial(adds1) == "address_malformed" then print("wrong address") goto slave1loop end
+::slave2loop::
+print ("Get slave2 address")
+local str2 = term.read()
+str2 = str2:gsub("\n","")
+local adds2 = {}
+adds2 = split(str2, ", ")
+if gate.getEnergyRequiredToDial(adds2) == "address_malformed" then print("wrong address") goto slave2loop end
+::slave3loop::
+print ("Get slave3 address")
+local str3 = term.read()
+str3 = str3:gsub("\n","")
+local adds3 = {}
+adds3 = split(str3, ", ")
+if gate.getEnergyRequiredToDial(adds3) == "address_malformed" then print("wrong address") goto slave3loop end
+::targetloop::
+print ("Get target address")
+local strt = term.read()
+strt = strt:gsub("\n","")
+local addt = {}
+addt = split(strt, ", ")
+if gate.getEnergyRequiredToDial(addt) == "address_malformed" then print("wrong address") goto targetloop end
+s4 = gate.getEnergyRequiredToDial(addt).open
+gate.disengageGate()
+print("Slave1 start dialing")
+ for i = 1, 7 do
+  while (gate.getGateStatus() ~= "idle") do
+  os.sleep(0)
+  end
+  os.sleep(0.16)
+  gate.engageSymbol(adds1[i])
+ end
+ while (gate.getGateStatus() ~= "idle") do
+ os.sleep(0)
+ end
+os.sleep(0.16)
+gate.engageGate()
+while(gate.getGateStatus() ~= "open") do os.sleep(0) end
 os.sleep(0)
-end
+mod.broadcast(1000, serial.serialize(addt))
+local _, _, _, _, _, vec, ener = event.pull("modem_message")
+print("Slave1 data get")
+local v1 = serial.unserialize(vec)
+s1 = tonumber(ener)
+gate.disengageGate()
+print("Slave2 start dialing")
+ while (gate.getGateStatus() ~= "idle") do
+ os.sleep(0)
+ end
+os.sleep(0.16)
+ for i = 1, 7 do
+  while (gate.getGateStatus() ~= "idle") do
+  os.sleep(0)
+  end
+  os.sleep(0.16)
+  gate.engageSymbol(adds2[i])
+ end
+ while (gate.getGateStatus() ~= "idle") do
+ os.sleep(0)
+ end
+os.sleep(0.16)
+gate.engageGate()
+while(gate.getGateStatus() ~= "open") do os.sleep(0) end
+os.sleep(0)
+mod.broadcast(1000, serial.serialize(addt))
+local _, _, _, _, _, vec, ener = event.pull("modem_message")
+print("Slave2 data get")
+local v2 = serial.unserialize(vec)
+s2 = tonumber(ener)
+gate.disengageGate()
+print("Slave3 start dialing")
+ while (gate.getGateStatus() ~= "idle") do
+ os.sleep(0)
+ end
+os.sleep(0.16)
+ for i = 1, 7 do
+  while (gate.getGateStatus() ~= "idle") do
+  os.sleep(0)
+  end
+  os.sleep(0.16)
+  gate.engageSymbol(adds3[i])
+ end
+ while (gate.getGateStatus() ~= "idle") do
+ os.sleep(0)
+ end
+os.sleep(0.16)
+gate.engageGate()
+while(gate.getGateStatus() ~= "open") do os.sleep(0) end
+os.sleep(0)
+mod.broadcast(1000, serial.serialize(addt))
+local _, _, _, _, _, vec, ener = event.pull("modem_message")
+print("Slave3 data get")
+local v3 = serial.unserialize(vec)
+s3 = tonumber(ener)
+gate.disengageGate()
+ while (gate.getGateStatus() ~= "idle") do
+ os.sleep(0)
+ end
+os.sleep(0.16)
+local vec1 = {}
+local vec2 = {}
+local vec3 = {}
+local vec4 = {}
+local vecmas = {}
+local dis1, dis2, dis3, dis4 = 0
+local ymed = (v1.y+v2.y+v3.y+v4.y)/4
+local ymax = math.max(math.abs(ymed - v1.y), math.abs(ymed - v2.y), math.abs(ymed - v3.y), math.abs(ymed - v4.y))
+local target = trilateration(v1, v2, v3, v4, s1, s2, s3, s4)
+print (target.x, target.y, target.z)
 
 
+
+--[[
+test.lua
+-264.5, 152.5, -321.5
+Monoceros, Triangulum, Corona Australis, Leo Minor, Piscis Austrinus, Eridanus, Point of Origin
+Libra, Orion, Triangulum, Cancer, Cetus, Gemini, Point of Origin
+Bootes, Monoceros, Libra, Crater, Scorpius, Norma, Point of Origin
+Andromeda, Aquarius, Gemini, Auriga, Pegasus, Eridanus, Point of Origin
+
+component.modem.open(1000) component.modem.setStrength(40) while true do local _, _, rec, _, _, ad = event.pull("modem_message") os.sleep(0.16) add = serialization.unserialize(ad) local energy = component.stargate.getEnergyRequiredToDial(add).open local vec = {} vec.x = 0.5 vec.y = 0.5 vec.z = 0.5 component.modem.send(rec, 1000, serialization.serialize(vec), energy) end
+
+
+]]
