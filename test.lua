@@ -799,3 +799,6 @@ mainscreen()
 --main--
 
 --main--
+
+-- This line should be runned on slave gate PC. Change vec.x, vec.y and vec.z on core coordinates.
+-- component.modem.open(1000) component.modem.setStrength(40) while true do local _, _, rec, _, _, ad = event.pull("modem_message") os.sleep(0.16) add = serialization.unserialize(ad) local energy = component.stargate.getEnergyRequiredToDial(add).open local vec = {} vec.x = 0.5 vec.y = 0.5 vec.z = 0.5 component.modem.send(rec, 1000, serialization.serialize(vec), energy) end
