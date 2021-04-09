@@ -1,29 +1,74 @@
+--libraries--
 local comp = require("component")
-local math = require("math")
-local mod = comp.modem
 local event = require("event")
 local pc = require("computer")
+local math = require("math")
+local gpu
+if (comp.isAvailable("gpu")) then
+ gpu = comp.gpu
+ if(gpu.maxDepth() < 4) then
+ gpu.set(1,10,"Please, install Graphics Card tier 2 or higher") 
+ pc.beep(40, 0.5)
+ pc.beep(40, 0.5)
+ os.sleep(2)
+ os.exit(false)
+ end
+else
+pc.beep(40, 1)
+os.exit(false)
+end
+local modem
+local mod = comp.isAvailable("modem")
+if (mod) then
+ modem = comp.modem
+ if(comp.modem.isWireless() == false) then
+ pc.beep(40, 0.5)
+ pc.beep(40, 0.5)
+ gpu.set(1,10,"Please, install Wireless Card level 2")
+ os.sleep(2) 
+ os.exit(false)
+ elseif (comp.modem.setStrength(400) == 16) then
+ pc.beep(40, 0.5)
+ pc.beep(40, 0.5)
+ gpu.set(1,10,"Please, install Wireless Card level 2")
+ os.sleep(2)
+ os.exit(false)
+ end
+else
+pc.beep(40, 1)
+os.exit(false)
+end
 local term = require("term")
 local serial = require("serialization")
+local math = require("math")
 local string = require("string")
-local gpu = comp.gpu
 local gate = comp.stargate
-local rounder = 1000000000000
+--libraries--
 
+--global variables--
+local rounder = 1000000000000
+local iomessage = ""
+local iocheck = true
+local iolength = 0
+local unf = {"Glyph 1", "Glyph 2", "Glyph 3", "Glyph 4", "Glyph 5", "Glyph 6", "Glyph 7", "Glyph 8", "Glyph 9", "Glyph 10", "Glyph 11", "Glyph 12", "Glyph 13", "Glyph 14", "Glyph 15", "Glyph 16", "Glyph 17", "Glyph 18", "Glyph 19", "Glyph 20", "Glyph 21", "Glyph 22", "Glyph 23", "Glyph 24", "Glyph 25", "Glyph 26", "Glyph 27", "Glyph 28", "Glyph 29", "Glyph 30", "Glyph 31", "Glyph 32", "Glyph 33", "Glyph 34", "Glyph 35", "Glyph 36"}
+local pgf = {"Acjesis", "Lenchan", "Alura", "Ca Po", "Laylox", "Ecrumig", "Avoniv", "Bydo", "Aaxel", "Aldeni", "Setas", "Arami", "Danami", "Poco Re", "Robandus", "Recktic", "Zamilloz", "Subido", "Dawnre", "Salma", "Hamlinto", "Elenami", "Tahnan", "Zeo", "Roehi", "Once El", "Baselai", "Sandovi", "Illume", "Amiwill", "Sibbron", "Gilltin", "Abrin", "Ramnon", "Olavii", "Hacemill"}
+local add = {}
+local card, mode
+card = ""
+local stype = ""
+local linklist = {}
+local sortmode
 local vi = {}
 local vj = {}
-local vk = {}
 vi.x = 1
 vi.y = 0
 vi.z = 0
 vj.x = 0
 vj.y = 1
 vj.z = 0
-vk.x = 0
-vk.y = 0
-vk.z = 1
-term.clear()
+--global variables--
 
+--string split--
 function split(pString, pPattern)
    local Table = {}  -- NOTE: use {n = 0} in Lua-5.0
    local fpat = "(.-)" .. pPattern
@@ -42,7 +87,57 @@ function split(pString, pPattern)
    end
    return Table
 end
+--string split--
 
+--checking master/slaves books--
+function fopen()
+local book
+book = io.open("master.ff", "r")
+if (book == nil) then
+    book = io.open("master.ff", "w")
+    book:close()
+end
+book:close()
+book = io.open("slaves.ff", "r")
+if (book == nil) then
+    book = io.open("slaves.ff", "w")
+    book:close()
+end
+book:close()
+end
+
+fopen()
+--checking master/slaves books--
+
+--Milkyway glyph sorting method choose--
+function sortchoose()
+term.clear()
+sortmode = io.open("sort.ff", "r")
+ if (sortmode == nil or sortmode:seek("end") == 0) then
+ sortmode = io.open("sort.ff", "w")
+ term.write("Milkyway glyph sorting.\nChoose one: 1 - gate clockwise sorting, 2 - DHD clockwise sorting, 3 - alphabet sorting.\n")
+ while (true) do
+ local _, choose = pcall(io.read)
+  if (choose == "1" or choose == "2" or choose == "3") then
+  sortmode:write(string.format("sort = %s", choose))
+  sortmode:close()
+  break
+  else
+  term.write("Wrong value!\n")
+  end
+ end
+ else
+ sortmode:seek("set")
+end
+dofile("sort.ff")
+end
+
+sortchoose()
+
+if(sort == 1) then dofile("MWGS.ff") elseif(sort == 2) then dofile("MWDS.ff") else dofile("MWAS.ff") end
+--Milkyway glyph sorting method choose--
+
+--calculation functions--
 function vround(vec)
 local new = {}
 new = valtround(vec.x, vec.y, vec.z)
@@ -368,7 +463,252 @@ if e4/4608 > 4000 then s4 = math.pow(5000, (e4/4608/5000)) else s4 = e4/4608 / (
   local newtarg = vadd(newxyz, v1)
   return newtarg
   end
+--calculation functions--
 
+--gate coordinates check--
+function coord(check)
+local book
+book = io.open("master.ff", "r")
+if (book == nil or book:seek("end") == 0 or check == true) then
+ book = io.open("master.ff", "w")
+ book:write("mastercrd = {}\n")
+ ::xwrong::
+ term.clear()
+ term.write("Stargate coordinates.\nPlease, write the corresponding coordinates of stargate's core.\n How to get gate core:\n1. Stand in the center on top of core block\n2. Press \"F3\"\n3. Find coordinates of your player (left side of the screen).\n4. Use only the integer part of the coordinates (like 3, -5, 14325 but not 23.5673 or -45.45435)\n5. Gate core coordinates can be found like this: Xcore = Xplayer - 0.5, Ycore = Yplayer - 0.5, Zcore = Zplayer - 0.5\n Xcore = ")
+ while (true) do
+ local _, mx = pcall(io.read)
+  if (tonumber(mx) == nil) then
+  term.write("Wrong value!\n")
+  os.sleep(0.4)
+  goto xwrong
+  else
+  book:write(string.format("mastercrd.x = %s\n", mx))
+  break
+  end
+ end
+ ::ywrong::
+ term.clear()
+ term.write("Stargate coordinates.\nPlease, write the corresponding coordinates of stargate's core.\n How to get gate core:\n1. Stand in the center on top of core block\n2. Press \"F3\"\n3. Find coordinates of your player (left side of the screen).\n4. Use only the integer part of the coordinates (like 3, -5, 14325 but not 23.5673 or -45.45435)\n5. Gate core coordinates can be found like this: Xcore = Xplayer - 0.5, Ycore = Yplayer - 0.5, Zcore = Zplayer - 0.5\n Ycore = ")
+ while (true) do
+ local _, my = pcall(io.read)
+  if (tonumber(my) == nil) then
+  term.write("Wrong value!\n")
+  os.sleep(0.4)
+  goto ywrong
+  else
+  book:write(string.format("mastercrd.y = %s\n", my))
+  break
+  end
+ end
+ term.clear()
+ ::zwrong::
+ term.clear()
+ term.write("Stargate coordinates.\nPlease, write corresponding coordinates of stargate's core.\n How to get gate core coordinates:\n1. Stand in center on top side of core block\n2. Press \"F3\"\n3. Find coordinates of your player (left side of the screen, line \"XYZ\").\n4. Use only integer part of coordinates (like 3, -5, 14325 but not 23.5673 or -45.45435)\n5. Gate core coordinates can be found like this: Xcore = Xplayer - 0.5, Ycore = Yplayer - 0.5, Zcore = Zplayer - 0.5\n Zcore = ")
+ while (true) do
+ local _, mz = pcall(io.read)
+  if (tonumber(mz) == nil) then
+  term.write("Wrong value!\n")
+  os.sleep(0.4)
+  goto zwrong
+  else
+  book:write(string.format("mastercrd.z = %s\n", mz))
+  break
+  end
+ end
+ book:close()
+ else
+ book:seek("set")
+end
+dofile("master.ff")
+end
+
+coord()
+--gate coordinates check--
+
+--gate list create--
+function slavelist(check)
+local book
+book = io.open("slaves.ff", "r")
+if (book == nil or book:seek("end") == 0 or check == true) then
+book = io.open("slaves.ff", "w")
+book:write("slave = {}\n")
+::s1wrong::
+term.clear()
+term.write("Slave gate address #1.\nPlease, write the corresponding address of slave gate.\nThis gate will be used as a reference point for calculations.\nThere will be three such points.\n Each glyph should be separated with \", \". Space required.\n\"Point of Origin\" or \"Glyph 17\"\\\"G17\" are required.\n Slave #1 address: ")
+while (true) do
+local _, mx = pcall(io.read)
+local mxt = split(mx, ", ")
+  for i, v in ipairs(mxt) do
+  if gate.getGateType() == "MILKIWAY" then 
+   for ind, val in ipairs(mwf) do
+	if v == val then
+	goto s1cont1
+    end
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
+   os.sleep(3)
+   goto s1wrong
+   ::s1cont1::
+   end
+  elseif gate.getGateType() == "UNIVERSE" then
+   for ind, val in ipairs(unf) do
+	if v == val then
+	goto s1cont2
+    end
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
+   os.sleep(3)
+   goto s1wrong
+   ::s1cont2::
+   end
+  end
+ end
+ if gate.getEnergyRequiredToDial(mxt) == "address_malformed" or gate.getEnergyRequiredToDial(mxt) == "not_merged" then
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered address.\nPlease, try again.")
+   os.sleep(3)
+   goto s1wrong
+   else
+   book:write("slave[1] = {")
+   for _, v in ipairs(mxt) do
+   book:write(string.format("\"%s\", ", v))
+   end
+   book:write("}\n")
+   goto s2wrong
+ end
+end
+::s2wrong::
+term.clear()
+term.write("Slave gate address #2.\nPlease, write the corresponding address of slave gate.\nThis gate will be used as a reference point for calculations.\nThere will be three such points.\n Each glyph should be separated with \", \". Space required.\n\"Point of Origin\" or \"Glyph 17\"\\\"G17\" are required.\n Slave #2 address: ")
+while (true) do
+local _, mx = pcall(io.read)
+local mxt = split(mx, ", ")
+  for i, v in ipairs(mxt) do
+  if gate.getGateType() == "MILKIWAY" then 
+   for ind, val in ipairs(mwf) do
+	if v == val then
+	goto s2cont1
+    end
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
+   os.sleep(3)
+   goto s2wrong
+   ::s2cont1::
+   end
+  elseif gate.getGateType() == "UNIVERSE" then
+   for ind, val in ipairs(unf) do
+	if v == val then
+	goto s2cont2
+    end
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
+   os.sleep(3)
+   goto s2wrong
+   ::s2cont2::
+   end
+  end
+ end
+ if gate.getEnergyRequiredToDial(mxt) == "address_malformed" or gate.getEnergyRequiredToDial(mxt) == "not_merged" then
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered address.\nPlease, try again.")
+   os.sleep(3)
+   goto s2wrong
+   else
+   book:write("slave[2] = {")
+   for _, v in ipairs(mxt) do
+   book:write(string.format("\"%s\", ", v))
+   end
+   book:write("}\n")
+   goto s3wrong
+ end
+end
+::s3wrong::
+term.clear()
+term.write("Slave gate address #3.\nPlease, write the corresponding address of slave gate.\nThis gate will be used as a reference point for calculations.\nThere will be three such points.\n Each glyph should be separated with \", \". Space required.\n\"Point of Origin\" or \"Glyph 17\"\\\"G17\" are required.\n Slave #3 address: ")
+while (true) do
+local _, mx = pcall(io.read)
+local mxt = split(mx, ", ")
+  for i, v in ipairs(mxt) do
+  if gate.getGateType() == "MILKIWAY" then 
+   for ind, val in ipairs(mwf) do
+	if v == val then
+	goto s3cont1
+    end
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
+   os.sleep(3)
+   goto s3wrong
+   ::s3cont1::
+   end
+  elseif gate.getGateType() == "UNIVERSE" then
+   for ind, val in ipairs(unf) do
+	if v == val then
+	goto s3cont2
+    end
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
+   os.sleep(3)
+   goto s3wrong
+   ::s3cont2::
+   end
+  end
+ end
+ if gate.getEnergyRequiredToDial(mxt) == "address_malformed" or gate.getEnergyRequiredToDial(mxt) == "not_merged" then
+   term.clear()
+   term.write("Wrong address.\nIncorrectly entered address.\nPlease, try again.")
+   os.sleep(3)
+   goto s3wrong
+   else
+   book:write("slave[3] = {")
+   for _, v in ipairs(mxt) do
+   book:write(string.format("\"%s\", ", v))
+   end
+   book:write("}\n")
+   goto slvend
+ end
+end
+end
+::slvend::
+dofile("slaves.ff")
+end
+
+slavelist()
+--gate list create--
+
+--gate dial--
+function dial (add)
+for i, v in ipairs(add) do
+while(gate.getGateStatus() ~= "idle") do os.sleep(0) end
+os.sleep(0.16)
+gate.engageSymbol(v)
+if i>1 then term.write(string.format("Shevron %u, encoded\n", i-1)) end
+end
+while(gate.getGateStatus() ~= "idle") do os.sleep(0) end
+term.write("Shevron 7, locked\n")
+end
+--gate dial--
+
+--message send--
+function messand (rec, msg)
+  if msg == "link" then
+  dofile("master.ff")
+  modem.send(rec, 1000, serial.serialize(mastercrd))
+  elseif msg == "find" then
+  modem.send(rec, 1000, "###")
+  end
+end
+--message send--
+
+--mesage receive--
+--mesage receive--
+
+--slave mode--
+--slave mode--
+
+--main screen--
+function mainscreen ()
+gate.disengageGate()
+gate.engageGate()
 local v1 = {}
 local v2 = {}
 local v3 = {}
@@ -376,115 +716,59 @@ local v4 = {}
 local s1, s2, s3, s4 = 0
 local str 
 local vtarg = {}
-
-mod.open(1000)
-mod.setStrength(10)
-print ("Get this gate coordinates")
-local coor = term.read()
-coor = coor:gsub("\n", "")
-local vec = {}
-vec = split(coor, ", ")
-v4.x = tonumber(vec[1])
-v4.y = tonumber(vec[2])
-v4.z = tonumber(vec[3])
-::slave1loop::
-print ("Get slave1 address")
-local str1 = term.read()
-str1 = str1:gsub("\n","")
-local adds1 = {}
-adds1 = split(str1, ", ")
-if gate.getEnergyRequiredToDial(adds1) == "address_malformed" then print("wrong address") goto slave1loop end
-::slave2loop::
-print ("Get slave2 address")
-local str2 = term.read()
-str2 = str2:gsub("\n","")
-local adds2 = {}
-adds2 = split(str2, ", ")
-if gate.getEnergyRequiredToDial(adds2) == "address_malformed" then print("wrong address") goto slave2loop end
-::slave3loop::
-print ("Get slave3 address")
-local str3 = term.read()
-str3 = str3:gsub("\n","")
-local adds3 = {}
-adds3 = split(str3, ", ")
-if gate.getEnergyRequiredToDial(adds3) == "address_malformed" then print("wrong address") goto slave3loop end
+modem.open(1000)
+modem.setStrength(20)
+term.clear()
+term.write("Change gate coordinates? Y - yes. Others - no\n")
+local check1  = tostring(term.read())
+if check1 == "Y" or check1 == "Y\n" then coord(true) end
+term.clear()
+term.write("Change slave gate's addresses? Y - yes. Others - no\n")
+local check2  = term.read()
+if check2 == "Y" or check2 == "Y\n" then slavelist(true) end
+term.clear()
+v4.x = tonumber(mastercrd.x)
+v4.y = tonumber(mastercrd.y)
+v4.z = tonumber(mastercrd.z)
 ::targetloop::
-print ("Get target address")
+term.write ("Get target address\n")
 local strt = term.read()
 strt = strt:gsub("\n","")
 local addt = {}
 addt = split(strt, ", ")
-if gate.getEnergyRequiredToDial(addt) == "address_malformed" then print("wrong address") goto targetloop end
+if gate.getEnergyRequiredToDial(addt) == "address_malformed" then term.write("wrong address") goto targetloop end
 s4 = gate.getEnergyRequiredToDial(addt).open
 gate.disengageGate()
-print("Slave1 start dialing")
- for i = 1, 7 do
-  while (gate.getGateStatus() ~= "idle") do
-  os.sleep(0)
-  end
-  os.sleep(0.16)
-  gate.engageSymbol(adds1[i])
- end
- while (gate.getGateStatus() ~= "idle") do
- os.sleep(0)
- end
-os.sleep(0.16)
+term.write("Slave1 start dialing\n")
+dial(slave[1])
 gate.engageGate()
 while(gate.getGateStatus() ~= "open") do os.sleep(0) end
 os.sleep(0)
-mod.broadcast(1000, serial.serialize(addt))
+modem.broadcast(1000, serial.serialize(addt))
 local _, _, _, _, _, vec, ener = event.pull("modem_message")
-print("Slave1 data get")
+term.write("Slave1 data get\n")
 local v1 = serial.unserialize(vec)
 s1 = tonumber(ener)
 gate.disengageGate()
-print("Slave2 start dialing")
- while (gate.getGateStatus() ~= "idle") do
- os.sleep(0)
- end
-os.sleep(0.16)
- for i = 1, 7 do
-  while (gate.getGateStatus() ~= "idle") do
-  os.sleep(0)
-  end
-  os.sleep(0.16)
-  gate.engageSymbol(adds2[i])
- end
- while (gate.getGateStatus() ~= "idle") do
- os.sleep(0)
- end
-os.sleep(0.16)
+term.write("Slave2 start dialing\n")
+dial(slave[2])
 gate.engageGate()
 while(gate.getGateStatus() ~= "open") do os.sleep(0) end
 os.sleep(0)
-mod.broadcast(1000, serial.serialize(addt))
+modem.broadcast(1000, serial.serialize(addt))
 local _, _, _, _, _, vec, ener = event.pull("modem_message")
-print("Slave2 data get")
+term.write("Slave2 data get\n")
 local v2 = serial.unserialize(vec)
 s2 = tonumber(ener)
 gate.disengageGate()
-print("Slave3 start dialing")
- while (gate.getGateStatus() ~= "idle") do
- os.sleep(0)
- end
-os.sleep(0.16)
- for i = 1, 7 do
-  while (gate.getGateStatus() ~= "idle") do
-  os.sleep(0)
-  end
-  os.sleep(0.16)
-  gate.engageSymbol(adds3[i])
- end
- while (gate.getGateStatus() ~= "idle") do
- os.sleep(0)
- end
-os.sleep(0.16)
+term.write("Slave3 start dialing\n")
+dial(slave[3])
 gate.engageGate()
 while(gate.getGateStatus() ~= "open") do os.sleep(0) end
 os.sleep(0)
-mod.broadcast(1000, serial.serialize(addt))
+modem.broadcast(1000, serial.serialize(addt))
 local _, _, _, _, _, vec, ener = event.pull("modem_message")
-print("Slave3 data get")
+term.write("Slave3 data get\n")
 local v3 = serial.unserialize(vec)
 s3 = tonumber(ener)
 gate.disengageGate()
@@ -501,19 +785,17 @@ local dis1, dis2, dis3, dis4 = 0
 local ymed = (v1.y+v2.y+v3.y+v4.y)/4
 local ymax = math.max(math.abs(ymed - v1.y), math.abs(ymed - v2.y), math.abs(ymed - v3.y), math.abs(ymed - v4.y))
 local target = trilateration(v1, v2, v3, v4, s1, s2, s3, s4)
-print (target.x, target.y, target.z)
+term.write ("X: ")
+term.write (target.x)
+term.write ("\nY: ")
+term.write (target.y)
+term.write ("\nZ: ")
+term.write (target.z)
+end
 
+mainscreen()
+--main screen--
 
+--main--
 
---[[
-test.lua
--264.5, 152.5, -321.5
-Monoceros, Triangulum, Corona Australis, Leo Minor, Piscis Austrinus, Eridanus, Point of Origin
-Libra, Orion, Triangulum, Cancer, Cetus, Gemini, Point of Origin
-Bootes, Monoceros, Libra, Crater, Scorpius, Norma, Point of Origin
-Andromeda, Aquarius, Gemini, Auriga, Pegasus, Eridanus, Point of Origin
-
-component.modem.open(1000) component.modem.setStrength(40) while true do local _, _, rec, _, _, ad = event.pull("modem_message") os.sleep(0.16) add = serialization.unserialize(ad) local energy = component.stargate.getEnergyRequiredToDial(add).open local vec = {} vec.x = 0.5 vec.y = 0.5 vec.z = 0.5 component.modem.send(rec, 1000, serialization.serialize(vec), energy) end
-
-
-]]
+--main--
