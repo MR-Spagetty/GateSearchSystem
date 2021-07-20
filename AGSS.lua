@@ -1,8 +1,9 @@
---libraries--
-local comp = require("component")
-local event = require("event")
-local pc = require("computer")
-local math = require("math")
+comp  = require("component")
+term = require("term")
+math = require("math")
+pc = require("computer")
+event = require("event")
+serial = require("serialization")
 local gpu
 if (comp.isAvailable("gpu")) then
  gpu = comp.gpu
@@ -38,104 +39,79 @@ else
 pc.beep(40, 1)
 os.exit(false)
 end
-local term = require("term")
-local serial = require("serialization")
-local math = require("math")
-local string = require("string")
-local gate = comp.stargate
---libraries--
+local gate
+local gch = comp.isAvailable("stargate")
+if (gch) then
+ pc.beep(40, 0.5)
+ pc.beep(40, 0.5)
+ gate = comp.stargate
+ else
+ gpu.set(1,10,"Stargate not connected")
+ pc.beep(40, 1)
+ os.exit(false)
+end
 
---global variables--
-local rounder = 1000000000000
-local iomessage = ""
-local iocheck = true
-local iolength = 0
-local unf = {"Glyph 1", "Glyph 2", "Glyph 3", "Glyph 4", "Glyph 5", "Glyph 6", "Glyph 7", "Glyph 8", "Glyph 9", "Glyph 10", "Glyph 11", "Glyph 12", "Glyph 13", "Glyph 14", "Glyph 15", "Glyph 16", "Glyph 17", "Glyph 18", "Glyph 19", "Glyph 20", "Glyph 21", "Glyph 22", "Glyph 23", "Glyph 24", "Glyph 25", "Glyph 26", "Glyph 27", "Glyph 28", "Glyph 29", "Glyph 30", "Glyph 31", "Glyph 32", "Glyph 33", "Glyph 34", "Glyph 35", "Glyph 36"}
-local pgf = {"Acjesis", "Lenchan", "Alura", "Ca Po", "Laylox", "Ecrumig", "Avoniv", "Bydo", "Aaxel", "Aldeni", "Setas", "Arami", "Danami", "Poco Re", "Robandus", "Recktic", "Zamilloz", "Subido", "Dawnre", "Salma", "Hamlinto", "Elenami", "Tahnan", "Zeo", "Roehi", "Once El", "Baselai", "Sandovi", "Illume", "Amiwill", "Sibbron", "Gilltin", "Abrin", "Ramnon", "Olavii", "Hacemill"}
+modem.setStrength(50)
+modem.open(1001)
+
+local addx = 0
+local addy = 0
+local pmode
+local x1, x2, x3, y1, y2, y3, z1, z2, z3
+local addmod = 0
+sortmode = -1
+local glmass = {}
 local add = {}
-local card, mode
-card = ""
-local stype = ""
-local linklist = {}
-local sortmode
-local vi = {}
-local vj = {}
-vi.x = 1
-vi.y = 0
-vi.z = 0
-vj.x = 0
-vj.y = 1
-vj.z = 0
---global variables--
+local linktest = false
+local srec = ""
+sladd = {}
+slmod = {}
+local slnum = 0
+local tloop = true
+local slener = {}
+--local slaveonly = false
+local ener = 0
+local mwfcode = {"Andromeda", "Aquarius", "Aries", "Auriga", "Bootes", "Cancer", "Canis Minor", "Capricornus", "Centaurus", "Cetus", "Corona Australis", "Crater", "Equuleus", "Eridanus", "Gemini", "Hydra", "Leo", "Leo Minor", "Libra", "Lynx", "Microscopium", "Monoceros", "Norma", "Orion", "Pegasus", "Perseus", "Pisces", "Piscis Austrinus", "Sagittarius", "Scorpius", "Sculptor", "Scutum", "Serpens Caput", "Sextans", "Taurus", "Triangulum", "Virgo", ""} 
+local unf = {"Glyph 1", "Glyph 2", "Glyph 3", "Glyph 4", "Glyph 5", "Glyph 6", "Glyph 7", "Glyph 8", "Glyph 9", "Glyph 10", "Glyph 11", "Glyph 12", "Glyph 13", "Glyph 14", "Glyph 15", "Glyph 16", "Glyph 18", "Glyph 19", "Glyph 20", "Glyph 21", "Glyph 22", "Glyph 23", "Glyph 24", "Glyph 25", "Glyph 26", "Glyph 27", "Glyph 28", "Glyph 29", "Glyph 30", "Glyph 31", "Glyph 32", "Glyph 33", "Glyph 34", "Glyph 35", "Glyph 36", ""}
+local pgf = {"Acjesis", "Lenchan", "Alura", "Ca Po", "Laylox", "Ecrumig", "Avoniv", "Bydo", "Aaxel", "Aldeni", "Setas", "Arami", "Danami", "Poco Re", "Robandus", "Recktic", "Zamilloz", "Dawnre", "Salma", "Hamlinto", "Elenami", "Tahnan", "Zeo", "Roehi", "Once El", "Baselai", "Sandovi", "Illume", "Amiwill", "Sibbron", "Gilltin", "Abrin", "Ramnon", "Olavii", "Hacemill", ""}
+--local pbalph = {"⣏","⣉","⣹","⣿"}
+local pbe = "⣏⣉⣉⣉⣹"
+--local pbf = "⣿⣿⣿⣿⣿"
 
---string split--
-function split(pString, pPattern)
-   local Table = {}  -- NOTE: use {n = 0} in Lua-5.0
-   local fpat = "(.-)" .. pPattern
-   local last_end = 1
-   local s, e, cap = pString:find(fpat, 1)
-   while s do
-      if s ~= 1 or cap ~= "" then
-     table.insert(Table,cap)
-      end
-      last_end = e+1
-      s, e, cap = pString:find(fpat, last_end)
-   end
-   if last_end <= #pString then
-      cap = pString:sub(last_end)
-      table.insert(Table, cap)
-   end
-   return Table
-end
---string split--
-
---checking master/slaves books--
-function fopen()
-local book
-book = io.open("master.ff", "r")
-if (book == nil) then
-    book = io.open("master.ff", "w")
-    book:close()
-end
-book:close()
-book = io.open("slaves.ff", "r")
-if (book == nil) then
-    book = io.open("slaves.ff", "w")
-    book:close()
-end
-book:close()
-end
-
-fopen()
---checking master/slaves books--
-
---Milkyway glyph sorting method choose--
-function sortchoose()
-term.clear()
-sortmode = io.open("sort.ff", "r")
- if (sortmode == nil or sortmode:seek("end") == 0) then
- sortmode = io.open("sort.ff", "w")
- term.write("Milkyway glyph sorting.\nChoose one: 1 - gate clockwise sorting, 2 - DHD clockwise sorting, 3 - alphabet sorting.\n")
- while (true) do
- local _, choose = pcall(io.read)
-  if (choose == "1" or choose == "2" or choose == "3") then
-  sortmode:write(string.format("sort = %s", choose))
-  sortmode:close()
-  break
+--dial--
+function dial(addr, int)
+local pos = 28
+if int == nil then int = 0 else gpu.set(9, pos+4*(int-1), "Starting dial       ") end
+for i, val in ipairs(addr) do
+ while(gate.getGateStatus() ~= "idle") do
+  if int == 0 then
+  os.sleep(0)
   else
-  term.write("Wrong value!\n")
+  os.sleep(0.2)
+  gpu.set(1,43, string.format("Current: %u RF", gate.getEnergyStored()))
   end
  end
- else
- sortmode:seek("set")
+os.sleep(0.16)
+gate.engageSymbol(val)
+ if int > 0 and i > 1 then 
+ gpu.set(9, pos+4*(int-1), string.format("Shevron %u - engaged", i-1)) 
+ gpu.setForeground(0xFFFFFF)
+ gpu.setBackground(0xAAAAAA)
+ gpu.set(1+5*(i-2), pos+1+4*(int-1), pbe)
+ gpu.setForeground(0xFFFFFF)
+ gpu.setBackground(0x000000)
+ end
 end
-dofile("sort.ff")
+while(gate.getGateStatus() ~= "idle") do os.sleep(0) end
+gpu.set(9, pos+4*(int-1), "Shevron 7 - locked  ") 
+gpu.setForeground(0xFFFFFF)
+gpu.setBackground(0xAAAAAA)
+gpu.set(31, pos+1+4*(int-1), pbe)
+gpu.setForeground(0xFFFFFF)
+gpu.setBackground(0x000000)
+os.sleep(0.16)
 end
-
-sortchoose()
-
-if(sort == 1) then dofile("MWGS.ff") elseif(sort == 2) then dofile("MWDS.ff") else dofile("MWAS.ff") end
---Milkyway glyph sorting method choose--
+--dial--
 
 --calculation functions--
 function vround(vec)
@@ -419,6 +395,14 @@ return new
 end
 
 function trilateration (v1, v2, v3, v4, e1, e2, e3, e4)
+local vi = {}
+local vj = {}
+vi.x = 1
+vi.y = 0
+vi.z = 0
+vj.x = 0
+vj.y = 1
+vj.z = 0
 local s1, s2, s3, s4 = 0
 if e1/4608 > 4000 then s1 = math.pow(5000, (e1/4608/5000)) else s1 = e1/4608 / (0.8) end
 if e2/4608 > 4000 then s2 = math.pow(5000, (e2/4608/5000)) else s2 = e2/4608 / (0.8) end
@@ -446,10 +430,8 @@ if e4/4608 > 4000 then s4 = math.pow(5000, (e4/4608/5000)) else s4 = e4/4608 / (
   local xrot = new.x/(math.modf(new.x*2)/2)
   s1 = s1/xrot
   new.x = new.x / xrot
-  --new.y = (s1*s1 - s3*s3 + v34.x*v34.x + v34.y*v34.y) / (2*v34.y) - new.x*(v34.x/v34.y)
   new.y = (s1*s1 - s3*s3 + (v34.x*v34.x+v34.y*v34.y)-2*v34.x*new.x) / (2*v34.y)
   local mayz = math.sqrt(math.abs(s1*s1-(new.x*new.x+new.y*new.y)))
-    --if (math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(mayz-v44.z)*(mayz-v44.z))) <= math.abs(s4*s4-((new.x-v44.x)*(new.x-v44.x)+(new.y-v44.y)*(new.y-v44.y)+(0-mayz-v44.z)*(0-mayz-v44.z)))) then
     if (math.abs(s4-math.sqrt(math.pow((new.x-v44.x), 2)+math.pow((new.y-v44.y), 2)+math.pow((mayz-v44.z),2))) <= math.abs(s4-math.sqrt(math.pow((new.x-v44.x), 2)+math.pow((new.y-v44.y), 2)+math.pow(((0-mayz)-v44.z),2)))) then
     new.z = mayz
     else
@@ -458,347 +440,874 @@ if e4/4608 > 4000 then s4 = math.pow(5000, (e4/4608/5000)) else s4 = e4/4608 / (
   local newx = vangrotx(new, tricos3, trisin3)
   local newxz = vangrotz(newx, tricos2, trisin2)
   local newxyz = vreroty(newxz, tricos1, trisin1)
- -- local newxy = vreroty(newx, tricos1, trisin1)
- -- local newxyz = vangrotz(newxy, tricos2, trisin2)
   local newtarg = vadd(newxyz, v1)
   return newtarg
   end
 --calculation functions--
 
---gate coordinates check--
-function coord(check)
+--split--
+function split(pString, pPattern)
+   local Table = {}
+   local fpat = "(.-)" .. pPattern
+   local last_end = 1
+   local s, e, cap = pString:find(fpat, 1)
+   while s do
+      if s ~= 1 or cap ~= "" then
+     table.insert(Table,cap)
+      end
+      last_end = e+1
+      s, e, cap = pString:find(fpat, last_end)
+   end
+   if last_end <= #pString then
+      cap = pString:sub(last_end)
+      table.insert(Table, cap)
+   end
+   return Table
+end
+--split--
+
+--Milkyway glyph sorting method choose--
+function sortchoose()
+term.clear()
+sortmode = io.open("sort.ff", "r")
+ if (sortmode == nil or sortmode:seek("end") == 0) then
+ sortmode = io.open("sort.ff", "w")
+ term.write("Milkyway glyph sorting.\nChoose one: 1 - gate clockwise sorting, 2 - DHD clockwise sorting, 3 - alphabet sorting.\n")
+ while (true) do
+ local _, choose = pcall(io.read)
+  if (choose == "1" or choose == "2" or choose == "3") then
+  sortmode:write(string.format("sort = %s", choose))
+  sortmode:close()
+  break
+  else
+  term.write("Wrong value!\n")
+  end
+ end
+ else
+ sortmode:seek("set")
+end
+sortmode:close()
+dofile("sort.ff")
+end
+
+sortchoose()
+
+if(sort == 1) then dofile("MWGS.ff") elseif(sort == 2) then dofile("MWDS.ff") else dofile("MWAS.ff") end
+--Milkyway glyph sorting method choose--
+
+--test link--
+function testlink(_, _, rec, _, _, msg)
+if msg == "link" then
+ linktest = true
+ srec = rec
+ end
+end
+--test link--
+
+--slave add screen touch--
+function slavetouch(_, _, x, y)
+local num = 0
+ if (x > 161-addx and y > 5 and y < addy+5 and x ~= 160-addx+addmod and #add<6) then
+  if (x < 160-addx+addmod and glmass[y-5] ~= "") then
+  num = y-5
+  local check = true
+   if #add > 0 then
+    for i = 1, #add do
+    if add[i] == glmass[num] then check = false break end
+    end
+    if check then
+    add[#add+1] = glmass[num] 
+    gpu.setBackground(0x666666)
+    gpu.setForeground(0xFFC400)
+    local str = glmass[num]
+    while #str < addmod-2 do str = string.format("%s%s", str, " ") end
+    gpu.set(162-addx, y, str)
+    gpu.setBackground(0x000000)
+    gpu.setForeground(0xFFFFFF)
+    end
+   else
+   add[1] = glmass[num]
+   gpu.setBackground(0x666666)
+   gpu.setForeground(0xFFC400)
+   local str = glmass[num]
+   while #str < addmod-2 do str = string.format("%s%s", str, " ") end
+   gpu.set(162-addx, y, str)
+   gpu.setBackground(0x000000)
+   gpu.setForeground(0xFFFFFF)
+   end
+  elseif (glmass[y-6+addy] ~= "") then
+  num = y-6+addy
+  local check = true
+   if #add > 0 then
+    for i = 1, #add do
+    if add[i] == glmass[num] then check = false break end
+    end
+    if check then
+    add[#add+1] = glmass[num]
+	gpu.setBackground(0x666666)
+    gpu.setForeground(0xFFC400)
+	local str = glmass[num]
+	while #str < addmod-2 do str = string.format("%s%s", str, " ") end
+	gpu.set(161-addx+addmod, y, str)
+    gpu.setBackground(0x000000)
+    gpu.setForeground(0xFFFFFF)
+	end
+   else
+   add[1] = glmass[num]
+   gpu.setBackground(0x666666)
+   gpu.setForeground(0xFFC400)
+   local str = glmass[num]
+   while #str < addmod-2 do str = string.format("%s%s", str, " ") end
+   gpu.set(161-addx+addmod, y, str)
+   gpu.setBackground(0x000000)
+   gpu.setForeground(0xFFFFFF)
+   end
+  end
+ local l = 0
+ gpu.setForeground(0xFFFFFF)
+  for line in GlyphImages[add[#add]]:gmatch("[^\r\n]+") do
+  gpu.set((#add-1)*(addmod-2)+2, 6+l, line)
+  l = l+1
+  end
+ elseif (x > 141 and x < 149 and y == addy+6) then
+  add = {}
+ gpu.setBackground(0x000000)
+ gpu.setForeground(0xFFFFFF)
+ if gate.getGateType() == "MILKYWAY" then
+ addx = 34 addy = 20 addmod = 18 glmass = mwf
+ elseif gate.getGateType() == "UNIVERSE" then
+ addx = 18 addy = 19 addmod = 10 glmass = unf
+ end
+ for i = 0, addy do
+ local str = ""
+   if i == 0 then 
+   for j = 1, addx do
+    if j == 1 then str = "┌" elseif j == addmod then str = string.format("%s%s", str, "┬") else str = string.format("%s%s", str, "─") end end
+   elseif i == addy then
+   for j = 1, addx do
+    if j == 1 then str = "└" elseif j == addmod then str = string.format("%s%s", str, "┴") else str = string.format("%s%s", str, "─") end end
+   else
+    str = string.format("%s%s", "│", glmass[i]) while #str < addmod+1 do str = string.format("%s%s", str, " ") end str = string.format("%s%s%s", str, "│", glmass[i+addy-1])  while #str < addx+4 do str = string.format("%s%s", str, " ") end
+   end
+   gpu.set(161-addx,i+5, str)
+ end
+ local adx, ady, admod
+  if gate.getGateType() == "MILKYWAY" then
+  adx = 9 ady = 97 admod = 16 dofile("MWG.ff")
+  elseif gate.getGateType() == "UNIVERSE" then
+  adx = 19 ady = 49 admod = 8 dofile("UNG.ff")
+  end
+  for i = 0, adx do
+  local str = ""
+   for j = 1, ady do
+    if math.fmod(j-1, admod) == 0 then
+     if i == 0 then 
+     if j == 1 then str = "┌" elseif j == ady then str = string.format("%s%s", str, "┐") else str = string.format("%s%s", str, "┬") end
+     elseif i == adx then
+     if j == 1 then str = "└" elseif j == ady then str = string.format("%s%s", str, "┘") else str = string.format("%s%s", str, "┴") end
+     else
+     str = string.format("%s%s", str, "│")
+     end
+    else
+    if i == 0 or i == adx then str = string.format("%s%s", str, "─") else str = string.format("%s%s", str, " ") end
+    end
+   end
+   gpu.set(1,i+5, str)
+  end
+ elseif (x > 152 and y == addy+6) then
+  if #add == 6 then
+   if (gate.getEnergyRequiredToDial(add) ~= "address_malformed" and gate.getEnergyRequiredToDial(add) ~= "not_merged") then
+    if (gate.getEnergyRequiredToDial(add).open + gate.getEnergyRequiredToDial(add).keepAlive*10 < gate.getEnergyStored()) then
+    gpu.set(9, 28, "Prepare for dialing") 
+    gate.disengageGate()
+	gate.engageGate()
+     if gate.getGateType() == "MILKYWAY" then
+     add[7] = "Point of Origin"
+     elseif gate.getGateType() == "UNIVERSE" then
+     add[7] = "Glyph 17"
+	 end
+     while(gate.getGateStatus() ~= "idle") do os.sleep(0.2) gpu.set(1,42, string.format("Address: %u RF", gate.getEnergyRequiredToDial(add).open + gate.getEnergyRequiredToDial(add).keepAlive*10)) end
+     os.sleep(0.25)
+     dial(add, 1)
+     gate.engageGate()
+	 while(gate.getGateStatus() ~= "open") do os.sleep(0.2) gpu.set(1,42, string.format("Address: %u RF", gate.getEnergyRequiredToDial(add).open + gate.getEnergyRequiredToDial(add).keepAlive*10)) end
+     os.sleep(0.25)
+     gpu.set(9, 28, "Data transmission   ") 
+	 linktest = false
+	 srec = ""
+	 event.ignore("modem_message", testlink)
+	 event.listen("modem_message", testlink)
+	 modem.broadcast(1001, "link")
+     for i = 1,10 do os.sleep(0.2) gpu.set(1,42, string.format("Address: %u RF", gate.getEnergyRequiredToDial(add).open + gate.getEnergyRequiredToDial(add).keepAlive*10)) end
+     event.ignore("modem_message", testlink)
+	 if (linktest) then
+     gpu.set(9, 28, "Data received       ") 
+	 gate.disengageGate()
+	 slmod[slnum] = srec
+	 sladd[slnum] = add
+	 add = {}
+	  if gate.getGateType() == "MILKYWAY" then
+      sladd[slnum][7] = "Point of Origin"
+      elseif gate.getGateType() == "UNIVERSE" then
+      sladd[slnum][7] = "Glyph 17"
+	  end
+     tloop = false
+	 else
+     gpu.set(1,50,"PC not found. Please install PC/Server with this program and wireless card on the other side of gate link or close wormhole.")
+     os.sleep(1)
+     gpu.fill(1,50,160,1," ")	 
+	 end
+ 	else
+    gpu.set(1,50,string.format("Not enough energy. You need at least %u RF.", gate.getEnergyRequiredToDial(add).open + gate.getEnergyRequiredToDial(add).keepAlive*10))
+    os.sleep(1)
+    gpu.fill(1,50,160,1," ")
+    end
+  else
+  add = {}
+  local adx, ady, admod
+   if gate.getGateType() == "MILKYWAY" then
+   adx = 9 ady = 97 admod = 16 dofile("MWG.ff")
+   elseif gate.getGateType() == "UNIVERSE" then
+   adx = 19 ady = 49 admod = 8 dofile("UNG.ff")
+   end
+   for i = 0, adx do
+   local str = ""
+    for j = 1, ady do
+     if math.fmod(j-1, admod) == 0 then
+      if i == 0 then 
+      if j == 1 then str = "┌" elseif j == ady then str = string.format("%s%s", str, "┐") else str = string.format("%s%s", str, "┬") end
+      elseif i == adx then
+      if j == 1 then str = "└" elseif j == ady then str = string.format("%s%s", str, "┘") else str = string.format("%s%s", str, "┴") end
+      else
+      str = string.format("%s%s", str, "│")
+      end
+     else
+     if i == 0 or i == adx then str = string.format("%s%s", str, "─") else str = string.format("%s%s", str, " ") end
+     end
+    end
+   gpu.set(1,i+5, str)
+   end
+  gpu.set(1,50,"Wrong address")
+  os.sleep(1)
+  gpu.fill(1,50,160,1," ")
+  end
+ else
+ add = {}
+ local adx, ady, admod
+  if gate.getGateType() == "MILKYWAY" then
+  adx = 9 ady = 97 admod = 16 dofile("MWG.ff")
+  elseif gate.getGateType() == "UNIVERSE" then
+  adx = 19 ady = 49 admod = 8 dofile("UNG.ff")
+  end
+  for i = 0, adx do
+  local str = ""
+   for j = 1, ady do
+    if math.fmod(j-1, admod) == 0 then
+     if i == 0 then 
+     if j == 1 then str = "┌" elseif j == ady then str = string.format("%s%s", str, "┐") else str = string.format("%s%s", str, "┬") end
+     elseif i == adx then
+     if j == 1 then str = "└" elseif j == ady then str = string.format("%s%s", str, "┘") else str = string.format("%s%s", str, "┴") end
+     else
+     str = string.format("%s%s", str, "│")
+     end
+    else
+    if i == 0 or i == adx then str = string.format("%s%s", str, "─") else str = string.format("%s%s", str, " ") end
+    end
+   end
+  gpu.set(1,i+5, str)
+  end
+ gpu.set(1,50,"Wrong address")
+ os.sleep(1)
+ gpu.fill(1,50,160,1," ")
+ end
+end
+end
+--slave add screen touch--
+
+--coordinates check--
+function coordchk(check)
+term.clear()
 local book
-book = io.open("master.ff", "r")
-if (book == nil or book:seek("end") == 0 or check == true) then
- book = io.open("master.ff", "w")
- book:write("mastercrd = {}\n")
- ::xwrong::
- term.clear()
- term.write("Stargate coordinates.\nPlease, write the corresponding coordinates of stargate's core.\n How to get gate core:\n1. Stand in the center on top of core block\n2. Press \"F3\"\n3. Find coordinates of your player (left side of the screen).\n4. Use only the integer part of the coordinates (like 3, -5, 14325 but not 23.5673 or -45.45435)\n5. Gate core coordinates can be found like this: Xcore = Xplayer - 0.5, Ycore = Yplayer - 0.5, Zcore = Zplayer - 0.5\n Xcore = ")
- while (true) do
- local _, mx = pcall(io.read)
-  if (tonumber(mx) == nil) then
-  term.write("Wrong value!\n")
-  os.sleep(0.4)
-  goto xwrong
+local coo = {}
+book = io.open("coord.ff", "r")
+if (book == nil or book:seek("end") == 0 or check) then
+    book = io.open("coord.ff", "w")
+	print("Please enter the coordinates of the gate core:\n1) Press F3.\n2) Look at the gate core.\n3) Find the line \"Looking at:\".\n4) Add 0.5 to each coordinate (4 + 0.5 = 4.5, -25 + 0.5 = -24.5).\n5) Enter the resulting coordinates in \"x, y, z\" format. The separator \", \" is mandatory.\nExample: -25.5, 14.5, 6.5")
+	local str = io.read()
+	coo = split(str, ", ")
+	book:write(string.format("x = %s\n", coo[1]))
+	book:write(string.format("y = %s\n", coo[2]))
+	book:write(string.format("z = %s\n", coo[3]))
+    book:close()
+end
+book:close()
+dofile("coord.ff")
+end
+
+coordchk(false)
+--coordinates check--
+
+--slaves check--
+function slvchk()
+local book
+ if gate.getGateType() == "MILKYWAY" then
+ book = io.open("MWslaves.ff", "r")
+ elseif gate.getGateType() == "UNIVERSE" then
+ book = io.open("UNslaves.ff", "r")
+ end
+ if (book == nil or book:seek("end") == 0) then
+  if gate.getGateType() == "MILKYWAY" then
+  book = io.open("MWslaves.ff", "w")
+  elseif gate.getGateType() == "UNIVERSE" then
+  book = io.open("UNslaves.ff", "w")
+  end
+for i = 1, 3 do
+term.clear()
+os.sleep(0.5)
+gpu.setForeground(0xFFFFFF)
+term.setCursor(1,1)
+term.write("Please, write address of slave gates (without PoO or G17).")
+term.setCursor(1,4)
+term.write(string.format("Slave #%u address:", i))
+gpu.set(1, 27, "Current gate")
+gpu.set(1, 28, "Status: Idle")
+gpu.set(1, 29, string.format("%s%s%s%s%s%s%s", pbe, pbe, pbe, pbe, pbe, pbe, pbe))
+gpu.fill(1,26,50,1,"─")
+gpu.fill(1,30,50,1,"─")
+gpu.fill(51,27,1,3,"│")
+gpu.set(51,26,"┐")
+gpu.set(51,30,"┘")
+gpu.set(61,48,"┐")
+gpu.fill(1,48,60,1,"─")
+gpu.fill(61,49,1,2,"│")
+gpu.set(51,40,"┐")
+gpu.set(51,44,"┘")
+gpu.fill(1,40,50,1,"─")
+gpu.fill(1,44,50,1,"─")
+gpu.fill(51,41,1,3,"│")
+gpu.set(1,41, "Energy requirements:")
+gpu.set(1,42, "Address: Unknown")
+gpu.set(1,49,"System message:")
+local adx, ady, admod
+if gate.getGateType() == "MILKYWAY" then
+adx = 9 ady = 97 admod = 16 dofile("MWG.ff")
+elseif gate.getGateType() == "UNIVERSE" then
+adx = 19 ady = 49 admod = 8 dofile("UNG.ff")
+end
+for i = 0, adx do
+local str = ""
+ for j = 1, ady do
+ if math.fmod(j-1, admod) == 0 then
+  if i == 0 then 
+   if j == 1 then str = "┌" elseif j == ady then str = string.format("%s%s", str, "┐") else str = string.format("%s%s", str, "┬") end
+  elseif i == adx then
+   if j == 1 then str = "└" elseif j == ady then str = string.format("%s%s", str, "┘") else str = string.format("%s%s", str, "┴") end
   else
-  book:write(string.format("mastercrd.x = %s\n", mx))
+   str = string.format("%s%s", str, "│")
+  end
+  else
+   if i == 0 or i == adx then str = string.format("%s%s", str, "─") else str = string.format("%s%s", str, " ") end
+ end
+ end
+ gpu.set(1,i+5, str)
+end
+if gate.getGateType() == "MILKYWAY" then
+addx = 34 addy = 20 addmod = 18 glmass = mwf
+elseif gate.getGateType() == "UNIVERSE" then
+addx = 18 addy = 19 addmod = 10 glmass = unf
+end
+for i = 0, addy do
+local str = ""
+  if i == 0 then 
+  for j = 1, addx do
+   if j == 1 then str = "┌" elseif j == addmod then str = string.format("%s%s", str, "┬") else str = string.format("%s%s", str, "─") end end
+  elseif i == addy then
+  for j = 1, addx do
+   if j == 1 then str = "└" elseif j == addmod then str = string.format("%s%s", str, "┴") else str = string.format("%s%s", str, "─") end end
+  else
+   str = string.format("%s%s", "│", glmass[i]) while #str < addmod+1 do str = string.format("%s%s", str, " ") end str = string.format("%s%s%s", str, "│", glmass[i+addy-1])
+  end
+  gpu.set(161-addx,i+5, str)
+end
+gpu.set(142,addy+6,"[CLEAR]    [ DIAL ]")
+slnum = i
+local ignor = true
+while ignor do
+ignor = event.ignore("touch", slavetouch)
+end
+event.listen("touch", slavetouch)
+tloop = true
+while tloop do os.sleep(0.2) gpu.set(1,43, string.format("Current: %u RF", gate.getEnergyStored())) end
+end
+book:write(string.format("slmod = {\"%s\", \"%s\", \"%s\"}\n", slmod[1], slmod[2], slmod[3]))
+ for i = 1, 3 do
+ local str = string.format("sladd[%u] = {", i)
+ for int, val in ipairs(sladd[i]) do
+ if int == 1 then str = string.format("%s\"%s\"", str, val) else str = string.format("%s, \"%s\"", str, val) end
+ end
+ str = string.format("%s}\n", str)
+ book:write(str)
+ end
+ goto slaveend
+else goto slaveend
+end
+::slaveend::
+book:close()
+ if gate.getGateType() == "MILKYWAY" then
+ dofile("MWslaves.ff")
+ elseif gate.getGateType() == "UNIVERSE" then
+ dofile("UNslaves.ff")
+ end
+end
+--slaves check--
+
+--mode choose--
+function modechoose()
+term.clear()
+book = io.open("pmode.ff", "r")
+ if (book == nil or book:seek("end") == 0) then
+ book = io.open("pmode.ff", "w")
+ term.write("Please select an operating mode:\nMASTER MODE - in this mode the computer will connect the gate to the gate in \"SLAVE MODE\" mode, receive data from it and perform calculations.\nEnergy is mandatory for both the computer and the gate.\nIt is not necessary to load the chunk, as the chunks around the player will be loaded automatically.\nSLAVE MODE - in this mode the computer will operate as a \"calculating beacon\" and will only transmit data to the computer in MASTER MODE.\nThe computer will transmit data by itself in the background mode, so therefore no further control of the computer is possible.\nEnergy for the computer is mandatory, but for the gate it is not. These computers should be at least in 3 instances.\nBoth the gate and the computer should be in a loaded chunk.\n1 - Master mode, 0 - Slave mode.\nYou cannot change it until you delete file /AGSS/mode.ff\n")
+ while (true) do
+ local _, choose = pcall(io.read)
+  if (choose == "1" or choose == "0") then
+  book:write(string.format("%s", choose))
+  book:close()
   break
+  else
+  term.write("Wrong value!\n")
   end
  end
- ::ywrong::
- term.clear()
- term.write("Stargate coordinates.\nPlease, write the corresponding coordinates of stargate's core.\n How to get gate core:\n1. Stand in the center on top of core block\n2. Press \"F3\"\n3. Find coordinates of your player (left side of the screen).\n4. Use only the integer part of the coordinates (like 3, -5, 14325 but not 23.5673 or -45.45435)\n5. Gate core coordinates can be found like this: Xcore = Xplayer - 0.5, Ycore = Yplayer - 0.5, Zcore = Zplayer - 0.5\n Ycore = ")
- while (true) do
- local _, my = pcall(io.read)
-  if (tonumber(my) == nil) then
-  term.write("Wrong value!\n")
-  os.sleep(0.4)
-  goto ywrong
-  else
-  book:write(string.format("mastercrd.y = %s\n", my))
-  break
-  end
- end
- term.clear()
- ::zwrong::
- term.clear()
- term.write("Stargate coordinates.\nPlease, write corresponding coordinates of stargate's core.\n How to get gate core coordinates:\n1. Stand in center on top side of core block\n2. Press \"F3\"\n3. Find coordinates of your player (left side of the screen, line \"XYZ\").\n4. Use only integer part of coordinates (like 3, -5, 14325 but not 23.5673 or -45.45435)\n5. Gate core coordinates can be found like this: Xcore = Xplayer - 0.5, Ycore = Yplayer - 0.5, Zcore = Zplayer - 0.5\n Zcore = ")
- while (true) do
- local _, mz = pcall(io.read)
-  if (tonumber(mz) == nil) then
-  term.write("Wrong value!\n")
-  os.sleep(0.4)
-  goto zwrong
-  else
-  book:write(string.format("mastercrd.z = %s\n", mz))
-  break
-  end
- end
- book:close()
  else
  book:seek("set")
 end
-dofile("master.ff")
-end
-
-coord()
---gate coordinates check--
-
---gate list create--
-function slavelist(check)
-local book
-book = io.open("slaves.ff", "r")
-if (book == nil or book:seek("end") == 0 or check == true) then
-book = io.open("slaves.ff", "w")
-book:write("slave = {}\n")
-::s1wrong::
+book:close()
+book = io.open("pmode.ff", "r")
+pmode = book:read()
+book:close()
 term.clear()
-term.write("Slave gate address #1.\nPlease, write the corresponding address of slave gate.\nThis gate will be used as a reference point for calculations.\nThere will be three such points.\n Each glyph should be separated with \", \". Space required.\n\"Point of Origin\" or \"Glyph 17\"\\\"G17\" are required.\n Slave #1 address: ")
-while (true) do
-local _, mx = pcall(io.read)
-local mxt = split(mx, ", ")
-  for i, v in ipairs(mxt) do
-  if gate.getGateType() == "MILKIWAY" then 
-   for ind, val in ipairs(mwf) do
-	if v == val then
-	goto s1cont1
+end
+--mode choose--
+
+--main screen touch--
+function maintouch(_, _, sx, sy)
+local s1st = 0
+local s2st = 0
+local s3st = 0
+local num = 0
+dofile("coord.ff")
+if (sx > 161-addx and sy > 5 and sy < addy+5 and sx ~= 160-addx+addmod and #add<6) then
+ if (sx < 160-addx+addmod and glmass[sy-5] ~= "") then
+ num = sy-5
+ local check = true
+  if #add > 0 then
+   for i = 1, #add do
+   if add[i] == glmass[num] then check = false break end
+   end
+    if check then
+	add[#add+1] = glmass[num] 
+	gpu.setBackground(0x666666)
+    gpu.setForeground(0xFFC400)
+	local str = glmass[num]
+	while #str < addmod-2 do str = string.format("%s%s", str, " ") end
+	gpu.set(162-addx, sy, str)
+    gpu.setBackground(0x000000)
+    gpu.setForeground(0xFFFFFF)
     end
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
-   os.sleep(3)
-   goto s1wrong
-   ::s1cont1::
+  else
+  add[1] = glmass[num]
+  gpu.setBackground(0x666666)
+  gpu.setForeground(0xFFC400)
+  local str = glmass[num]
+  while #str < addmod-2 do str = string.format("%s%s", str, " ") end
+  gpu.set(162-addx, sy, str)
+  gpu.setBackground(0x000000)
+  gpu.setForeground(0xFFFFFF)
+  end
+ elseif (glmass[sy-6+addy] ~= "") then
+ num = sy-6+addy
+ local check = true
+  if #add > 0 then
+   for i = 1, #add do
+   if add[i] == glmass[num] then check = false break end
+   end
+    if check then
+    add[#add+1] = glmass[num]
+	gpu.setBackground(0x666666)
+    gpu.setForeground(0xFFC400)
+	local str = glmass[num]
+	while #str < addmod-2 do str = string.format("%s%s", str, " ") end
+	gpu.set(161-addx+addmod, sy, str)
+    gpu.setBackground(0x000000)
+    gpu.setForeground(0xFFFFFF)
+	end
+  else
+  add[1] = glmass[num]
+  gpu.setBackground(0x666666)
+  gpu.setForeground(0xFFC400)
+  local str = glmass[num]
+  while #str < addmod-2 do str = string.format("%s%s", str, " ") end
+  gpu.set(161-addx+addmod, sy, str)
+  gpu.setBackground(0x000000)
+  gpu.setForeground(0xFFFFFF)
+  end
+ end
+local l = 0
+gpu.setForeground(0xFFFFFF)
+ for line in GlyphImages[add[#add]]:gmatch("[^\r\n]+") do
+ gpu.set((#add-1)*(addmod-2)+2, 6+l, line)
+ l = l+1
+ end
+elseif (sx > 152 and sy == addy+6) then
+gpu.fill(123,48,60,3," ")
+ if #add == 6 and gate.getEnergyRequiredToDial(add) ~= "address_malformed" and gate.getEnergyRequiredToDial(add) ~= "not_merged" then
+ local gatecrd = {}
+ local gatedst = {}
+ for i = 1, 4 do gatecrd[i] = {} gatedst[i] = 0 end
+ gatecrd[1].x = x
+ gatecrd[1].y = y
+ gatecrd[1].z = z
+ gatedst[1] = gate.getEnergyRequiredToDial(add).open + 0.5
+ sradd = {}
+ for i = 1, 3 do
+ slener[i] = gate.getEnergyRequiredToDial(sladd[i]).open + gate.getEnergyRequiredToDial(sladd[i]).keepAlive*10
+ end
+ for i = 1, 6 do
+  if gate.getGateType() == "MILKYWAY" then
+   for j = 1, #mwfcode do
+   if mwfcode[j] == add[i] then sradd[i] = j end
    end
   elseif gate.getGateType() == "UNIVERSE" then
-   for ind, val in ipairs(unf) do
-	if v == val then
-	goto s1cont2
-    end
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
-   os.sleep(3)
-   goto s1wrong
-   ::s1cont2::
+   for j = 1, #unf do
+   if mwf[j] == add[i] then sradd[i] = j end
    end
   end
  end
- if gate.getEnergyRequiredToDial(mxt) == "address_malformed" or gate.getEnergyRequiredToDial(mxt) == "not_merged" then
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered address.\nPlease, try again.")
-   os.sleep(3)
-   goto s1wrong
+ seradd = serial.serialize(sradd)
+ for i = 1, 3 do
+  gpu.set(9, 28+4*(i-1), "Prepare for dialing") 
+  gate.disengageGate()
+  gate.engageGate()
+  while(gate.getGateStatus() ~= "idle") do os.sleep(0) end
+  os.sleep(0.25)
+  while (slener[i] > gate.getEnergyStored()) do
+  gpu.set(9, 28+4*(i-1), "Low energy. Waiting.")
+  os.sleep(0.2)
+  gpu.set(1,43, string.format("Current: %u RF", gate.getEnergyStored()))
+  end
+  dial(sladd[i], i)
+  gate.engageGate()
+  while(gate.getGateStatus() ~= "open") do os.sleep(0) end
+  os.sleep(0.25)
+  gpu.set(9, 28+4*(i-1), "Data transmission   ") 
+  modem.send(slmod[i], 1001, "find", seradd)
+  local _, _, _, _, _, crd, eng = event.pull("modem_message")
+  gatecrd[i+1] = serial.unserialize(crd)
+  gatedst[i+1] = tonumber(eng)
+  gpu.set(9, 28+4*(i-1), "Data received       ") 
+  gate.disengageGate()
+  end
+ local targ = trilateration(gatecrd[1], gatecrd[2], gatecrd[3], gatecrd[4], gatedst[1], gatedst[2], gatedst[3], gatedst[4])
+ for i = 1, 3 do
+ gpu.set(9, 28+4*(i-1), "Idle                ")
+ gpu.set(1, 29+4*(i-1), string.format("%s%s%s%s%s%s%s", pbe, pbe, pbe, pbe, pbe, pbe, pbe))
+ end
+ gpu.set(90,48,tostring(targ.x))
+ gpu.set(90,49,tostring(targ.y))
+ gpu.set(90,50,tostring(targ.z))
+ else
+ add = {}
+local adx, ady, admod
+ if gate.getGateType() == "MILKYWAY" then
+ adx = 9 ady = 97 admod = 16 dofile("MWG.ff")
+ elseif gate.getGateType() == "UNIVERSE" then
+ adx = 19 ady = 49 admod = 8 dofile("UNG.ff")
+ end
+ for i = 0, adx do
+ local str = ""
+  for j = 1, ady do
+   if math.fmod(j-1, admod) == 0 then
+    if i == 0 then 
+    if j == 1 then str = "┌" elseif j == ady then str = string.format("%s%s", str, "┐") else str = string.format("%s%s", str, "┬") end
+    elseif i == adx then
+    if j == 1 then str = "└" elseif j == ady then str = string.format("%s%s", str, "┘") else str = string.format("%s%s", str, "┴") end
+    else
+    str = string.format("%s%s", str, "│")
+    end
    else
-   book:write("slave[1] = {")
-   for _, v in ipairs(mxt) do
-   book:write(string.format("\"%s\", ", v))
+   if i == 0 or i == adx then str = string.format("%s%s", str, "─") else str = string.format("%s%s", str, " ") end
    end
-   book:write("}\n")
-   goto s2wrong
+  end
+ gpu.set(1,i+5, str)
+ end
+ gpu.set(1,50,"Wrong address")
+ os.sleep(1)
+ gpu.fill(1,50,160,1," ")
+ end
+elseif (sx > 141 and sx < 149 and sy == addy+6) then
+add = {}
+gpu.setBackground(0x000000)
+gpu.setForeground(0xFFFFFF)
+if gate.getGateType() == "MILKYWAY" then
+addx = 34 addy = 20 addmod = 18 glmass = mwf
+elseif gate.getGateType() == "UNIVERSE" then
+addx = 18 addy = 19 addmod = 10 glmass = unf
+end
+for i = 0, addy do
+local str = ""
+  if i == 0 then 
+  for j = 1, addx do
+   if j == 1 then str = "┌" elseif j == addmod then str = string.format("%s%s", str, "┬") else str = string.format("%s%s", str, "─") end end
+  elseif i == addy then
+  for j = 1, addx do
+   if j == 1 then str = "└" elseif j == addmod then str = string.format("%s%s", str, "┴") else str = string.format("%s%s", str, "─") end end
+  else
+   str = string.format("%s%s", "│", glmass[i]) while #str < addmod+1 do str = string.format("%s%s", str, " ") end str = string.format("%s%s%s", str, "│", glmass[i+addy-1])  while #str < addx+4 do str = string.format("%s%s", str, " ") end
+  end
+  gpu.set(161-addx,i+5, str)
+end
+local adx, ady, admod
+ if gate.getGateType() == "MILKYWAY" then
+ adx = 9 ady = 97 admod = 16 dofile("MWG.ff")
+ elseif gate.getGateType() == "UNIVERSE" then
+ adx = 19 ady = 49 admod = 8 dofile("UNG.ff")
+ end
+ for i = 0, adx do
+ local str = ""
+  for j = 1, ady do
+   if math.fmod(j-1, admod) == 0 then
+    if i == 0 then 
+    if j == 1 then str = "┌" elseif j == ady then str = string.format("%s%s", str, "┐") else str = string.format("%s%s", str, "┬") end
+    elseif i == adx then
+    if j == 1 then str = "└" elseif j == ady then str = string.format("%s%s", str, "┘") else str = string.format("%s%s", str, "┴") end
+    else
+    str = string.format("%s%s", str, "│")
+    end
+   else
+   if i == 0 or i == adx then str = string.format("%s%s", str, "─") else str = string.format("%s%s", str, " ") end
+   end
+  end
+  gpu.set(1,i+5, str)
+ end
+elseif(sx > 129 and sx < 139 and sy == addy+6 and gate.getGateType() == "MILKYWAY") then
+add = {}
+gpu.setBackground(0x000000)
+gpu.setForeground(0xFFFFFF)
+addx = 34 addy = 20 addmod = 18 glmass = mwf
+for i = 0, addy do
+local str = ""
+  if i == 0 then 
+  for j = 1, addx do
+   if j == 1 then str = "┌" elseif j == addmod then str = string.format("%s%s", str, "┬") else str = string.format("%s%s", str, "─") end end
+  elseif i == addy then
+  for j = 1, addx do
+   if j == 1 then str = "└" elseif j == addmod then str = string.format("%s%s", str, "┴") else str = string.format("%s%s", str, "─") end end
+  else
+   str = string.format("%s%s", "│", glmass[i]) while #str < addmod+1 do str = string.format("%s%s", str, " ") end str = string.format("%s%s%s", str, "│", glmass[i+addy-1])  while #str < addx+4 do str = string.format("%s%s", str, " ") end
+  end
+  gpu.set(161-addx,i+5, str)
+end
+local adx, ady, admod
+adx = 9 ady = 97 admod = 16 dofile("MWG.ff")
+ for i = 0, adx do
+ local str = ""
+  for j = 1, ady do
+   if math.fmod(j-1, admod) == 0 then
+    if i == 0 then 
+    if j == 1 then str = "┌" elseif j == ady then str = string.format("%s%s", str, "┐") else str = string.format("%s%s", str, "┬") end
+    elseif i == adx then
+    if j == 1 then str = "└" elseif j == ady then str = string.format("%s%s", str, "┘") else str = string.format("%s%s", str, "┴") end
+    else
+    str = string.format("%s%s", str, "│")
+    end
+   else
+   if i == 0 or i == adx then str = string.format("%s%s", str, "─") else str = string.format("%s%s", str, " ") end
+   end
+  end
+  gpu.set(1,i+5, str)
+ end
+local diadd = gate.dialedAddress
+diadd = diadd:sub(2, #diadd-1)
+add = split(diadd, ", ")
+if #add > 6 then gpu.set(1,50,"Unsupportable address") add = {} end
+local num = 0
+ for _, val in ipairs(add) do
+  for i, v in ipairs(mwf) do
+   if v == val then 
+   local str = v
+   while #str < 16 do str = string.format("%s%s", str, " ") end
+   gpu.setBackground(0x666666)
+   gpu.setForeground(0xFFC400)
+   gpu.set(128+(math.floor((i-1)/19)*17), math.fmod(i-1, 19)+6, str)
+   gpu.setBackground(0x000000)
+   gpu.setForeground(0xFFFFFF)
+   local l = 0
+    for line in GlyphImages[v]:gmatch("[^\r\n]+") do
+    gpu.set(num*16+2, 6+l, line)
+    l = l+1
+    end
+	num = num+1
+   end
+  end
  end
 end
-::s2wrong::
+end
+--main screen touch--
+
+--mainscreen--
+function mainscreen()
+slvchk()
+ if gate.getGateType() == "MILKYWAY" then
+ dofile("MWslaves.ff")
+ elseif gate.getGateType() == "UNIVERSE" then
+ dofile("UNslaves.ff")
+ end
+for i = 1, 3 do
+slener[i] = gate.getEnergyRequiredToDial(sladd[i]).open + gate.getEnergyRequiredToDial(sladd[i]).keepAlive*10
+end 
 term.clear()
-term.write("Slave gate address #2.\nPlease, write the corresponding address of slave gate.\nThis gate will be used as a reference point for calculations.\nThere will be three such points.\n Each glyph should be separated with \", \". Space required.\n\"Point of Origin\" or \"Glyph 17\"\\\"G17\" are required.\n Slave #2 address: ")
-while (true) do
-local _, mx = pcall(io.read)
-local mxt = split(mx, ", ")
-  for i, v in ipairs(mxt) do
-  if gate.getGateType() == "MILKIWAY" then 
-   for ind, val in ipairs(mwf) do
-	if v == val then
-	goto s2cont1
-    end
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
-   os.sleep(3)
-   goto s2wrong
-   ::s2cont1::
-   end
+os.sleep(0.5)
+gpu.setForeground(0xFFFFFF)
+term.setCursor(1,1)
+term.write("Welcome to Aunis Gate Search System.\nNote: AGSS works only for gates in same dimension.")
+term.setCursor(1,4)
+term.write("Current search address:")
+local adx, ady, admod
+if gate.getGateType() == "MILKYWAY" then
+adx = 9 ady = 97 admod = 16 dofile("MWG.ff")
+elseif gate.getGateType() == "UNIVERSE" then
+adx = 19 ady = 49 admod = 8 dofile("UNG.ff")
+end
+for i = 0, adx do
+local str = ""
+ for j = 1, ady do
+ if math.fmod(j-1, admod) == 0 then
+  if i == 0 then 
+   if j == 1 then str = "┌" elseif j == ady then str = string.format("%s%s", str, "┐") else str = string.format("%s%s", str, "┬") end
+  elseif i == adx then
+   if j == 1 then str = "└" elseif j == ady then str = string.format("%s%s", str, "┘") else str = string.format("%s%s", str, "┴") end
+  else
+   str = string.format("%s%s", str, "│")
+  end
+  else
+   if i == 0 or i == adx then str = string.format("%s%s", str, "─") else str = string.format("%s%s", str, " ") end
+ end
+ end
+ gpu.set(1,i+5, str)
+end
+if gate.getGateType() == "MILKYWAY" then
+addx = 34 addy = 20 addmod = 18 glmass = mwf
+elseif gate.getGateType() == "UNIVERSE" then
+addx = 18 addy = 19 addmod = 10 glmass = unf
+end
+for i = 0, addy do
+local str = ""
+  if i == 0 then 
+  for j = 1, addx do
+   if j == 1 then str = "┌" elseif j == addmod then str = string.format("%s%s", str, "┬") else str = string.format("%s%s", str, "─") end end
+  elseif i == addy then
+  for j = 1, addx do
+   if j == 1 then str = "└" elseif j == addmod then str = string.format("%s%s", str, "┴") else str = string.format("%s%s", str, "─") end end
+  else
+   str = string.format("%s%s", "│", glmass[i]) while #str < addmod+1 do str = string.format("%s%s", str, " ") end str = string.format("%s%s%s", str, "│", glmass[i+addy-1])
+  end
+  gpu.set(161-addx,i+5, str)
+end
+ if gate.getGateType() == "MILKYWAY" then
+ gpu.set(129,addy+6,"[GET DHD]    [CLEAR]    [ FIND ]")
+ elseif gate.getGateType() == "UNIVERSE" then
+ gpu.set(142,addy+6,"[CLEAR]    [ FIND ]")
+ end
+gpu.fill(1,26,50,1,"─")
+gpu.fill(1,38,50,1,"─")
+gpu.fill(1,44,50,1,"─")
+gpu.fill(51,27,1,17,"│")
+gpu.set(51,26,"┐")
+gpu.set(51,38,"┤")
+gpu.set(51,44,"┘")
+gpu.set(61,48,"┐")
+gpu.fill(1,48,60,1,"─")
+gpu.fill(61,49,1,2,"│")
+gpu.fill(85,46,80,1,"─")
+gpu.fill(85,40,80,1,"─")
+gpu.fill(84,41,1,10,"│")
+gpu.set(84,46,"├")
+gpu.set(84,40,"┌")
+gpu.set(85,41,"Impotrant note:")
+gpu.set(85,42,"Obtained result is not accurate. The accuracy of the calculations depends")
+gpu.set(85,43,"on the distances between the Master and Slaves gates (more is better).")
+gpu.set(85,44,"However, even in the most accurate calculations, the gate may be")
+gpu.set(85,45,"about 100-200 blocks away from the obtained coordinates.")
+gpu.set(1,49,"System message:")
+gpu.set(85,47,"Search result:")
+gpu.set(85,48,"X: ")
+gpu.set(85,49,"Y: ")
+gpu.set(85,50,"Z: ")
+gpu.set(1, 27, "Slave #1")
+gpu.set(1, 28, "Status: Idle")
+gpu.set(1, 31, "Slave #2")
+gpu.set(1, 32, "Status: Idle")
+gpu.set(1, 35, "Slave #3")
+gpu.set(1, 36, "Status: Idle")
+for i = 1, 3 do gpu.set(1, 29+(i-1)*4, string.format("%s%s%s%s%s%s%s",pbe,pbe,pbe,pbe,pbe,pbe,pbe)) end
+gpu.set(1,39, "Energy requirements:")
+for i = 1, 3 do gpu.set(1,39+i, string.format("Gate %u: %u RF", i, slener[i])) end
+local ignor = true
+while ignor do
+ignor = event.ignore("touch", maintouch)
+end
+event.listen("touch", maintouch)
+while true do os.sleep(0.2) gpu.set(1,43, string.format("Current: %u RF", gate.getEnergyStored())) end
+end
+--mainscreen--
+
+--slave message send--
+function slavemessage(_, recev, snd, _, _, msg, msgadd)
+os.sleep(1)
+ if msg == "link" then
+ modem.send(snd, 1001, "link")
+ os.sleep(0.2)
+ modem.send(snd, 1001, "link")
+ os.sleep(0.2)
+ modem.send(snd, 1001, "link")
+ elseif msg == "find" then
+ local numadd = serial.unserialize(msgadd)
+ local add = {}
+  if gate.getGateType() == "MILKYWAY" then
+  for i = 1, 6 do add[i] = mwfcode[numadd[i]] end
   elseif gate.getGateType() == "UNIVERSE" then
-   for ind, val in ipairs(unf) do
-	if v == val then
-	goto s2cont2
-    end
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
-   os.sleep(3)
-   goto s2wrong
-   ::s2cont2::
-   end
+  for i = 1, 6 do add[i] = unf[numadd[i]] end
   end
- end
- if gate.getEnergyRequiredToDial(mxt) == "address_malformed" or gate.getEnergyRequiredToDial(mxt) == "not_merged" then
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered address.\nPlease, try again.")
-   os.sleep(3)
-   goto s2wrong
-   else
-   book:write("slave[2] = {")
-   for _, v in ipairs(mxt) do
-   book:write(string.format("\"%s\", ", v))
-   end
-   book:write("}\n")
-   goto s3wrong
+ local energy = gate.getEnergyRequiredToDial(add).open + 0.5
+ local vec = {} vec.x = x vec.y = y vec.z = z
+ local servec = serial.serialize(vec)
+ modem.send(snd, 1001, servec, energy)
+ os.sleep(0.2)
+ modem.send(snd, 1001, servec, energy)
+ os.sleep(0.2)
+ modem.send(snd, 1001, servec, energy)
  end
 end
-::s3wrong::
+--slave message send--
+
+--slavescreen--
+function slavescreen()
 term.clear()
-term.write("Slave gate address #3.\nPlease, write the corresponding address of slave gate.\nThis gate will be used as a reference point for calculations.\nThere will be three such points.\n Each glyph should be separated with \", \". Space required.\n\"Point of Origin\" or \"Glyph 17\"\\\"G17\" are required.\n Slave #3 address: ")
-while (true) do
-local _, mx = pcall(io.read)
-local mxt = split(mx, ", ")
-  for i, v in ipairs(mxt) do
-  if gate.getGateType() == "MILKIWAY" then 
-   for ind, val in ipairs(mwf) do
-	if v == val then
-	goto s3cont1
-    end
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
-   os.sleep(3)
-   goto s3wrong
-   ::s3cont1::
-   end
-  elseif gate.getGateType() == "UNIVERSE" then
-   for ind, val in ipairs(unf) do
-	if v == val then
-	goto s3cont2
-    end
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered glyphs or address is not supported.\nPlease, try again.")
-   os.sleep(3)
-   goto s3wrong
-   ::s3cont2::
-   end
-  end
- end
- if gate.getEnergyRequiredToDial(mxt) == "address_malformed" or gate.getEnergyRequiredToDial(mxt) == "not_merged" then
-   term.clear()
-   term.write("Wrong address.\nIncorrectly entered address.\nPlease, try again.")
-   os.sleep(3)
-   goto s3wrong
-   else
-   book:write("slave[3] = {")
-   for _, v in ipairs(mxt) do
-   book:write(string.format("\"%s\", ", v))
-   end
-   book:write("}\n")
-   goto slvend
- end
+local ignor = true
+while ignor do
+ignor = event.ignore("modem_message", slavemessage)
 end
+event.listen("modem_message", slavemessage)
+dofile("BG.ff")
+local l = 0
+for line in BG:gmatch("[^\r\n]+") do
+gpu.set(38,6+l,line)
+l = l+1
 end
-::slvend::
-dofile("slaves.ff")
+gpu.set(75, 50, "SLAVE MODE")
+while true do os.sleep(10) end
 end
+--slavescreen--
 
-slavelist()
---gate list create--
-
---gate dial--
-function dial (add)
-for i, v in ipairs(add) do
-while(gate.getGateStatus() ~= "idle") do os.sleep(0) end
-os.sleep(0.16)
-gate.engageSymbol(v)
-if i>1 then term.write(string.format("Shevron %u, encoded\n", i-1)) end
-end
-while(gate.getGateStatus() ~= "idle") do os.sleep(0) end
-term.write("Shevron 7, locked\n")
-end
---gate dial--
-
---message send--
-function messand (rec, msg)
-  if msg == "link" then
-  dofile("master.ff")
-  modem.send(rec, 1000, serial.serialize(mastercrd))
-  elseif msg == "find" then
-  modem.send(rec, 1000, "###")
-  end
-end
---message send--
-
---mesage receive--
---mesage receive--
-
---slave mode--
---slave mode--
-
---main screen--
-function mainscreen ()
-gate.disengageGate()
-gate.engageGate()
-local v1 = {}
-local v2 = {}
-local v3 = {}
-local v4 = {}
-local s1, s2, s3, s4 = 0
-local str 
-local vtarg = {}
-modem.open(1000)
-modem.setStrength(20)
-term.clear()
-term.write("Change gate coordinates? Y - yes. Others - no\n")
-local check1  = tostring(term.read())
-if check1 == "Y" or check1 == "Y\n" then coord(true) end
-term.clear()
-term.write("Change slave gate's addresses? Y - yes. Others - no\n")
-local check2  = term.read()
-if check2 == "Y" or check2 == "Y\n" then slavelist(true) end
-term.clear()
-v4.x = tonumber(mastercrd.x)
-v4.y = tonumber(mastercrd.y)
-v4.z = tonumber(mastercrd.z)
-::targetloop::
-term.write ("Get target address\n")
-local strt = term.read()
-strt = strt:gsub("\n","")
-local addt = {}
-addt = split(strt, ", ")
-if gate.getEnergyRequiredToDial(addt) == "address_malformed" then term.write("wrong address") goto targetloop end
-s4 = gate.getEnergyRequiredToDial(addt).open
-gate.disengageGate()
-term.write("Slave1 start dialing\n")
-dial(slave[1])
-gate.engageGate()
-while(gate.getGateStatus() ~= "open") do os.sleep(0) end
-os.sleep(0)
-modem.broadcast(1000, serial.serialize(addt))
-local _, _, _, _, _, vec, ener = event.pull("modem_message")
-term.write("Slave1 data get\n")
-local v1 = serial.unserialize(vec)
-s1 = tonumber(ener)
-gate.disengageGate()
-term.write("Slave2 start dialing\n")
-dial(slave[2])
-gate.engageGate()
-while(gate.getGateStatus() ~= "open") do os.sleep(0) end
-os.sleep(0)
-modem.broadcast(1000, serial.serialize(addt))
-local _, _, _, _, _, vec, ener = event.pull("modem_message")
-term.write("Slave2 data get\n")
-local v2 = serial.unserialize(vec)
-s2 = tonumber(ener)
-gate.disengageGate()
-term.write("Slave3 start dialing\n")
-dial(slave[3])
-gate.engageGate()
-while(gate.getGateStatus() ~= "open") do os.sleep(0) end
-os.sleep(0)
-modem.broadcast(1000, serial.serialize(addt))
-local _, _, _, _, _, vec, ener = event.pull("modem_message")
-term.write("Slave3 data get\n")
-local v3 = serial.unserialize(vec)
-s3 = tonumber(ener)
-gate.disengageGate()
- while (gate.getGateStatus() ~= "idle") do
- os.sleep(0)
- end
-os.sleep(0.16)
-local vec1 = {}
-local vec2 = {}
-local vec3 = {}
-local vec4 = {}
-local vecmas = {}
-local dis1, dis2, dis3, dis4 = 0
-local ymed = (v1.y+v2.y+v3.y+v4.y)/4
-local ymax = math.max(math.abs(ymed - v1.y), math.abs(ymed - v2.y), math.abs(ymed - v3.y), math.abs(ymed - v4.y))
-local target = trilateration(v1, v2, v3, v4, s1, s2, s3, s4)
-term.write ("X: ")
-term.write (target.x)
-term.write ("\nY: ")
-term.write (target.y)
-term.write ("\nZ: ")
-term.write (target.z)
-end
-
-mainscreen()
---main screen--
-
---main--
-
---main--
-
--- This line should be runned on slave gate PC. Change vec.x, vec.y and vec.z on core coordinates.
--- component.modem.open(1000) component.modem.setStrength(40) while true do local _, _, rec, _, _, ad = event.pull("modem_message") os.sleep(0.16) add = serialization.unserialize(ad) local energy = component.stargate.getEnergyRequiredToDial(add).open local vec = {} vec.x = 0.5 vec.y = 0.5 vec.z = 0.5 component.modem.send(rec, 1000, serialization.serialize(vec), energy) end
+modechoose()
+if tonumber(pmode) == 1 then mainscreen() elseif tonumber(pmode) == 0 then slavescreen() end
