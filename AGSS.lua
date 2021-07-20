@@ -732,11 +732,11 @@ end
 
 --coordinates check--
 function coordchk(check)
-term.clear()
 local book
 local coo = {}
 book = io.open("coord.ff", "r")
 if (book == nil or book:seek("end") == 0 or check) then
+    term.clear()
     book = io.open("coord.ff", "w")
 	print("Please enter the coordinates of the gate core:\n1) Press F3.\n2) Look at the gate core.\n3) Find the line \"Looking at:\".\n4) Add 0.5 to each coordinate (4 + 0.5 = 4.5, -25 + 0.5 = -24.5).\n5) Enter the resulting coordinates in \"x, y, z\" format. The separator \", \" is mandatory.\nExample: -25.5, 14.5, 6.5")
 	local str = io.read()
@@ -1353,6 +1353,14 @@ os.sleep(1)
 end
 --slave message send--
 
+--slavescreen touch--
+function sctouch(_, _, sx, sy)
+ if sx < 21 and sy == 50 then
+ coordchk(true)
+ end
+end
+--slavescreen touch--
+
 --slavescreen--
 function slavescreen()
 term.clear()
@@ -1367,7 +1375,12 @@ for line in BG:gmatch("[^\r\n]+") do
 gpu.set(38,6+l,line)
 l = l+1
 end
-gpu.set(75, 50, "SLAVE MODE")
+gpu.set(75, 50, "SLAVE MODE")local ignor = true
+gpu.set(1,50,"[CHANGE COORDIANTES]")
+while ignor do
+ignor = event.ignore("touch", sctouch)
+end
+event.listen("touch", sctouch)
 while true do os.sleep(10) end
 end
 --slavescreen--
