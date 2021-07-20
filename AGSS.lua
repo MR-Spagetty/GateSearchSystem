@@ -95,6 +95,7 @@ os.sleep(0.16)
 gate.engageSymbol(val)
  if int > 0 and i > 1 then 
  gpu.set(9, pos+4*(int-1), string.format("Shevron %u - engaged", i-1)) 
+ pc.beep(150, 0.1)
  gpu.setForeground(0xFFFFFF)
  gpu.setBackground(0xAAAAAA)
  gpu.set(1+5*(i-2), pos+1+4*(int-1), pbe)
@@ -104,6 +105,7 @@ gate.engageSymbol(val)
 end
 while(gate.getGateStatus() ~= "idle") do os.sleep(0) end
 gpu.set(9, pos+4*(int-1), "Shevron 7 - locked  ") 
+pc.beep(180, 0.1)
 gpu.setForeground(0xFFFFFF)
 gpu.setBackground(0xAAAAAA)
 gpu.set(31, pos+1+4*(int-1), pbe)
@@ -508,6 +510,7 @@ end
 function slavetouch(_, _, x, y)
 local num = 0
  if (x > 161-addx and y > 5 and y < addy+5 and x ~= 160-addx+addmod and #add<6) then
+  pc.beep(150, 0.1)
   if (x < 160-addx+addmod and glmass[y-5] ~= "") then
   num = y-5
   local check = true
@@ -570,6 +573,8 @@ local num = 0
   l = l+1
   end
  elseif (x > 141 and x < 149 and y == addy+6) then
+ pc.beep(120, 0.05)
+ pc.beep(150, 0.05)
   add = {}
  gpu.setBackground(0x000000)
  gpu.setForeground(0xFFFFFF)
@@ -615,6 +620,7 @@ local num = 0
    gpu.set(1,i+5, str)
   end
  elseif (x > 152 and y == addy+6) then
+ pc.beep(180, 0.1)
   if #add == 6 then
    if (gate.getEnergyRequiredToDial(add) ~= "address_malformed" and gate.getEnergyRequiredToDial(add) ~= "not_merged") then
     if (gate.getEnergyRequiredToDial(add).open + gate.getEnergyRequiredToDial(add).keepAlive*10 < gate.getEnergyStored()) then
@@ -897,6 +903,7 @@ local s3st = 0
 local num = 0
 dofile("coord.ff")
 if (sx > 161-addx and sy > 5 and sy < addy+5 and sx ~= 160-addx+addmod and #add<6) then
+ pc.beep(150, 0.1)
  if (sx < 160-addx+addmod and glmass[sy-5] ~= "") then
  num = sy-5
  local check = true
@@ -959,6 +966,8 @@ gpu.setForeground(0xFFFFFF)
  l = l+1
  end
 elseif (sx > 152 and sy == addy+6) then
+pc.beep(120, 0.05)
+pc.beep(180, 0.05)
 gpu.fill(123,48,60,3," ")
  if #add == 6 and gate.getEnergyRequiredToDial(add) ~= "address_malformed" and gate.getEnergyRequiredToDial(add) ~= "not_merged" then
  local gatecrd = {}
@@ -1045,6 +1054,8 @@ local adx, ady, admod
  gpu.fill(1,50,160,1," ")
  end
 elseif (sx > 141 and sx < 149 and sy == addy+6) then
+pc.beep(120, 0.05)
+pc.beep(150, 0.05)
 add = {}
 gpu.setBackground(0x000000)
 gpu.setForeground(0xFFFFFF)
@@ -1090,6 +1101,8 @@ local adx, ady, admod
   gpu.set(1,i+5, str)
  end
 elseif(sx > 129 and sx < 139 and sy == addy+6 and gate.getGateType() == "MILKYWAY") then
+pc.beep(180, 0.05)
+pc.beep(150, 0.05)
 add = {}
 gpu.setBackground(0x000000)
 gpu.setForeground(0xFFFFFF)
