@@ -754,14 +754,14 @@ coordchk(false)
 --coordinates check--
 
 --slaves check--
-function slvchk()
+function slvchk(flag)
 local book
  if gate.getGateType() == "MILKYWAY" then
  book = io.open("MWslaves.ff", "r")
  elseif gate.getGateType() == "UNIVERSE" then
  book = io.open("UNslaves.ff", "r")
  end
- if (book == nil or book:seek("end") == 0) then
+ if (book == nil or book:seek("end") == 0 or flag) then
   if gate.getGateType() == "MILKYWAY" then
   book = io.open("MWslaves.ff", "w")
   elseif gate.getGateType() == "UNIVERSE" then
@@ -1163,13 +1163,23 @@ local num = 0
    end
   end
  end
+elseif (sx > 121 and sx < 141 and sy == 39) then
+pc.beep(150, 0.05)
+pc.beep(150, 0.05)
+coordchk(true)
+mainscreen()
+elseif (sx > 145 and sy == 39) then
+pc.beep(120, 0.05)
+pc.beep(120, 0.05)
+slvchk(true)
+mainscreen()
 end
 end
 --main screen touch--
 
 --mainscreen--
 function mainscreen()
-slvchk()
+slvchk(false)
  if gate.getGateType() == "MILKYWAY" then
  dofile("MWslaves.ff")
  elseif gate.getGateType() == "UNIVERSE" then
@@ -1231,6 +1241,7 @@ end
  elseif gate.getGateType() == "UNIVERSE" then
  gpu.set(142,addy+6,"[CLEAR]    [ FIND ]")
  end
+gpu.set(121,39,"[CHANGE COORDINATES]     [CHANGE SLAVES]")
 gpu.fill(1,26,50,1,"─")
 gpu.fill(1,38,50,1,"─")
 gpu.fill(1,44,50,1,"─")
