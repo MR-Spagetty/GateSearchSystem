@@ -695,7 +695,7 @@ local num = 0
    end
   gpu.set(1,50,"Wrong address")
   os.sleep(1)
-  gpu.fill(1,50,160,1," ")
+  gpu.fill(1,50,60,1," ")
   end
  else
  add = {}
@@ -724,7 +724,7 @@ local num = 0
   end
  gpu.set(1,50,"Wrong address")
  os.sleep(1)
- gpu.fill(1,50,160,1," ")
+ gpu.fill(1,50,60,1," ")
  end
 end
 end
@@ -903,6 +903,30 @@ local s3st = 0
 local num = 0
 dofile("coord.ff")
 if (sx > 161-addx and sy > 5 and sy < addy+5 and sx ~= 160-addx+addmod and #add<6) then
+ if #add == 0 then
+ gpu.setBackground(0x000000)
+ gpu.setForeground(0xFFFFFF)
+  if gate.getGateType() == "MILKYWAY" then
+  addx = 34 addy = 20 addmod = 18 glmass = mwf
+  elseif gate.getGateType() == "UNIVERSE" then
+  addx = 18 addy = 19 addmod = 10 glmass = unf
+  end
+  for i = 0, addy do
+  local str = ""
+   if i == 0 then 
+    for j = 1, addx do
+    if j == 1 then str = "┌" elseif j == addmod then str = string.format("%s%s", str, "┬") else str = string.format("%s%s", str, "─") end
+	end
+   elseif i == addy then
+    for j = 1, addx do
+    if j == 1 then str = "└" elseif j == addmod then str = string.format("%s%s", str, "┴") else str = string.format("%s%s", str, "─") end
+	end
+   else
+    str = string.format("%s%s", "│", glmass[i]) while #str < addmod+1 do str = string.format("%s%s", str, " ") end str = string.format("%s%s%s", str, "│", glmass[i+addy-1])  while #str < addx+4 do str = string.format("%s%s", str, " ") end
+   end
+   gpu.set(161-addx,i+5, str)
+  end
+ end
  pc.beep(150, 0.1)
  if (sx < 160-addx+addmod and glmass[sy-5] ~= "") then
  num = sy-5
@@ -969,6 +993,21 @@ elseif (sx > 152 and sy == addy+6) then
 pc.beep(120, 0.05)
 pc.beep(180, 0.05)
 gpu.fill(123,48,60,3," ")
+ for i = 1, 3 do
+  local bool = {0, 0, 0, 0, 0, 0}
+   for j = 1, 6 do 
+   if add[j] == sladd[i][j] then bool[j] = 1 end
+   end
+  if bool[1] == bool[2] and bool[2] == bool[3] and bool[3] == bool[4] and bool[4] == bool[5] and bool[5] == bool[6] and bool[1] == 1 then
+  add = {}
+  gpu.set(1,50,"This gate slave/master gate")
+  pc.beep(100, 0.5)
+  pc.beep(100, 0.5)
+  gate.disengageGate()
+  gate.engageGate()
+  break
+  end
+ end
  if #add == 6 and gate.getEnergyRequiredToDial(add) ~= "address_malformed" and gate.getEnergyRequiredToDial(add) ~= "not_merged" then
  local gatecrd = {}
  local gatedst = {}
@@ -1051,7 +1090,7 @@ local adx, ady, admod
  end
  gpu.set(1,50,"Wrong address")
  os.sleep(1)
- gpu.fill(1,50,160,1," ")
+ gpu.fill(1,50,60,1," ")
  end
 elseif (sx > 141 and sx < 149 and sy == addy+6) then
 pc.beep(120, 0.05)
