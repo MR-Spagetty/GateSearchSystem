@@ -1,5 +1,5 @@
 # AunisGateSearch
-Open computers program for seeing what UNIVERSE gate addresses do and don't exist
+Open computers program for finding teh location of a gate's locaiton in teh world through trilateration
 
 To install the program on a computer use the command:
 ```
